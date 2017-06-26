@@ -433,4 +433,4 @@ if __name__ == '__main__':
     print('writing to xlsx')
     write_to_xls()
 
-.gitignore config.py gitlab issues models.py peewee peewee.py pyoo.py requests rtk_projects.py six.py unicodecsv update_db.py
+
