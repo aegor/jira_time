@@ -56,6 +56,9 @@ class Issue:
         # todo see down
         # updating created time for issue in db, remove it after updating
 
+        q = OLAP.update(created=self._convert_time(issue.created_at)).where(OLAP.issue_id==issue.id)
+        q.execute()
+
         self.project_id = str(issue.project_id)
         self.issue_id = str(issue.id)
         self.title = xstr(getattr(issue, 'title', ''))
@@ -191,7 +194,7 @@ def fill_field(issue, entry, new: bool, up_time: int):
             iss.issue_title = issue.title
             iss.assignee = issue.assignee
             iss.state = issue.state
-            iss.created = issue.created
+            iss.created = issue.createdза
             iss.time_estimate = issue.time_estimate_secs
             iss.time_spent = issue.time_spent_secs
             iss.updated = issue.updated
