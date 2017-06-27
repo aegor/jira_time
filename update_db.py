@@ -194,7 +194,7 @@ def fill_field(issue, entry, new: bool, up_time: int):
             iss.issue_title = issue.title
             iss.assignee = issue.assignee
             iss.state = issue.state
-            iss.created = issue.createdза
+            iss.created = issue.created
             iss.time_estimate = issue.time_estimate_secs
             iss.time_spent = issue.time_spent_secs
             iss.updated = issue.updated
@@ -267,13 +267,13 @@ def read_issues(dbname):
 def get_date_closing(issue):
     last_issue = OLAP.select(OLAP.issue_id, fn.Min(OLAP.updated)).where((OLAP.issue_id == issue.issue_id) &
                                                                         (OLAP.state == 'closed')).get()
-    return '' if last_issue.updated is None else datetime.datetime.fromtimestamp(last_issue.updated + 18000).strftime('%d-%m-%Y %H:%M')
+    return '' if last_issue.updated is None else datetime.datetime.fromtimestamp(last_issue.updated + 18000).strftime(
+        '%d-%m-%Y %H:%M')
 
 
 def write_to_xls():
     # connect
     from unotools.unohelper import convert_path_to_url
-
 
     context = unotools.connect(unotools.Socket(host=sohost, port=soport))
     calc = Calc(context)
@@ -310,7 +310,7 @@ def write_to_xls():
 
         sheet = calc.get_sheet_by_name(name)
         print('filling report of: ' + assignee)
-
+        sheet.get_cell_range_by_name("A1:B1").merge(True)
         # make headers:
         # set cell 0.0 to name os assignee
         sheet.get_cell_by_position(0, 0).setDataArray(((name,),))
