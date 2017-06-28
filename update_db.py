@@ -306,24 +306,38 @@ class ReportCalc:
                    self.estimate_column,
                    self.spend_column]
         # fill service data
-        for text in columns:
-            sheet.get_cell_by_position(text, 1).setDataArray(((self.column_names[columns.index(text)],),))
+        before = sheet.get_cell_range_by_position(4,1,5,1)
+        before_date = 'date'
+        before.setDataArray(((before_date,''),))
+        weeks = ['w1','w2','w3','w4']
+        for w in weeks:
+            cell = sheet.get_cell_by_position(6+weeks.index(w)*2,1)
+            cell.setString(w)
+
+        before.merge(True)
+        align = before.getPropertyValue('HoriJustify')
+        align.value = 'CENTER'
+        before.setPropertyValue('HoriJustify', align)
+        sheet.get_cell_range_by_position(0, 2, 5, 2).setDataArray(((tuple(self.column_names)),))
+        #for text in columns:
+        #    sheet.get_cell_by_position(text, 1).setDataArray(((self.column_names[columns.index(text)],),))
         sheet.get_cell_range_by_position(2, 0, 3, 2).Columns.Width = 4000
 
-        sheet.get_cell_by_position(0, 2).setDataArray((("Итого",),))
         sheet.get_cell_range_by_name("A1:B1").merge(True)
         # set cell 0.0 to name os assignee
         sheet.get_cell_by_position(0, 0).setDataArray(((name,),))
         # data of columns
 
 
-        sheet.get_cell_by_position(0, 2).setDataArray((("Итого",),))
+        sheet.get_cell_by_position(0, 3).setDataArray((("Итого",),))
         # make row of result green with borders
         # green background for total time
 
-        green_row = sheet.get_cell_range_by_position(0, 1, 5, 1)
+        green_row = sheet.get_cell_range_by_position(0, 3, 5, 3)
         green_row.setPropertyValue('CellBackColor', 0x00aa00)
         green_row.setPropertyValues(self.keys, self.border_lines)
+
+
 
 
     def write_to_xls(self):
@@ -354,7 +368,7 @@ class ReportCalc:
 
 
             # total ts and te of assignee
-            lines = 3  # start count from 1 row [in GUI 2]
+            lines = 4  # start count from 1 row [in GUI 2]
             ts, te = 0, 0
             from time import time
             """
@@ -383,8 +397,8 @@ class ReportCalc:
 
                     lines += 1
 
-            sheet.get_cell_by_position(self.estimate_column, 2).setString(seconds_to_time(te) + ' h')
-            sheet.get_cell_by_position(self.spend_column, 2).setString(seconds_to_time(ts) + ' h')
+            sheet.get_cell_by_position(self.estimate_column, 3).setString(seconds_to_time(te) + ' h')
+            sheet.get_cell_by_position(self.spend_column, 3).setString(seconds_to_time(ts) + ' h')
             sheet.get_cell_range_by_position(1, 0, 1, 0).Columns.Width = 6000
             sheet.get_cell_range_by_position(4, 0, 5, 2).Columns.OptimalWidth = True
             """
@@ -443,7 +457,7 @@ if __name__ == '__main__':
     print('Init gl')
     gl = login_gl()
     print('Prepare issues...')
-    prepare_issues(gl)
+    #prepare_issues(gl)
     read_issues(dbname)
     print('Write to csv file...')
     write_issues_to_csv(issues)
