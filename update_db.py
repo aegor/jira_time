@@ -318,8 +318,8 @@ class ReportCalc:
             align = cell.getPropertyValue('HoriJustify')
             align.value = 'CENTER'
             cells.setPropertyValue('HoriJustify', align)
-            estimate = sheet.get_cell_by_position(6+weeks.index(w)*2,2).setString("План")
-            spent = sheet.get_cell_by_position(7+weeks.index(w)*2,2).setString("Факт")
+            sheet.get_cell_by_position(6+weeks.index(w)*2,2).setString("План")
+            sheet.get_cell_by_position(7+weeks.index(w)*2,2).setString("Факт")
 
 
 
