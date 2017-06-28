@@ -170,8 +170,8 @@ def fill_field(issue, entry, new: bool, up_time: int):
                                       issue_id=issue.issue_id)
         if not new:
             _iss, new = OLAP.get_or_create(updated=issue.updated,
-                                                  time_spent=issue.time_spent_secs,
-                                                  issue_id=issue.issue_id)
+                                           time_spent=issue.time_spent_secs,
+                                           issue_id=issue.issue_id)
             if new:
                 _iss.issue_id = issue.issue_id
                 _iss.issue_title = issue.title
@@ -269,16 +269,12 @@ def get_date_closing(issue):
                                                                         (OLAP.state == 'closed')).get()
     return '' if last_issue.updated is None else datetime.datetime.fromtimestamp(last_issue.updated + 18000).strftime(
         '%d-%m-%Y %H:%M')
+class ReportCalc:
 
-
-def write_to_xls():
-    # connect
-    from unotools.unohelper import convert_path_to_url
-
-    context = unotools.connect(unotools.Socket(host=sohost, port=soport))
-    calc = Calc(context)
-    filled_issue = 0
-
+    line = uno.createUnoStruct('com.sun.star.table.BorderLine2')
+    line.OuterLineWidth = 1
+    keys = ('TopBorder', 'RightBorder', 'BottomBorder', 'LeftBorder')
+    border_lines = (line, line, line, line)  # uno vars for border lines
     column_names = [
         'Проект',
         'Задача',
@@ -294,38 +290,32 @@ def write_to_xls():
     estimate_column = 4
     spend_column = 5
 
-    line = uno.createUnoStruct('com.sun.star.table.BorderLine2')
-    line.OuterLineWidth = 1
-    keys = ('TopBorder', 'RightBorder', 'BottomBorder', 'LeftBorder')
-    border_lines = (line, line, line, line)
-    # create tables of assignees
-    for assignee in assignees:
+    def __init__(self):
+        self.write_to_xls()
+    # uno vars for border lines
 
-        try:
-            name, _ = map(lambda x: x.strip(), assignee.split('@'))
-        except ValueError:
-            name = assignee.strip()
 
-        calc.insert_sheets_new_by_name(name, 0)  # returns None
+    def fill_header(self, sheet, name):
+        """fill header of sheet with current assignee"""
 
-        sheet = calc.get_sheet_by_name(name)
-        print('filling report of: ' + assignee)
+         # data of columns
+        columns = [self.project_column,
+                   self.issues_column,
+                   self.opened_column,
+                   self.closed_column,
+                   self.estimate_column,
+                   self.spend_column]
+        # fill service data
+        for text in columns:
+            sheet.get_cell_by_position(text, 1).setDataArray(((self.column_names[columns.index(text)],),))
+        sheet.get_cell_range_by_position(2, 0, 3, 2).Columns.Width = 4000
+
+        sheet.get_cell_by_position(0, 2).setDataArray((("Итого",),))
         sheet.get_cell_range_by_name("A1:B1").merge(True)
-        # make headers:
         # set cell 0.0 to name os assignee
         sheet.get_cell_by_position(0, 0).setDataArray(((name,),))
         # data of columns
 
-        columns = [project_column,
-                   issues_column,
-                   opened_column,
-                   closed_column,
-                   estimate_column,
-                   spend_column]
-        # fill service data
-        for temp in columns:
-            sheet.get_cell_by_position(temp,1).setDataArray(((column_names[columns.index(temp)],),))
-        sheet.get_cell_range_by_position(2, 0, 3, 2).Columns.Width = 4000
 
         sheet.get_cell_by_position(0, 2).setDataArray((("Итого",),))
         # make row of result green with borders
@@ -333,45 +323,74 @@ def write_to_xls():
 
         green_row = sheet.get_cell_range_by_position(0, 1, 5, 1)
         green_row.setPropertyValue('CellBackColor', 0x00aa00)
-        green_row.setPropertyValues(keys, border_lines)
+        green_row.setPropertyValues(self.keys, self.border_lines)
 
-        # total ts and te of assignee
-        lines = 3  # start count from 1 row [in GUI 2]
-        ts, te = 0, 0
-        from time import time
-        for issue in issues:
-            if issue.assignee == assignee:
-                iss = OLAP.select().where(OLAP.issue_id == issue.issue_id).get()
-                line = sheet.get_cell_range_by_position(0, lines, 5, lines)
 
-                date_closing = get_date_closing(issue)
-                if date_closing != '':
-                    row = sheet.get_cell_range_by_position(0, lines, 5, lines)
-                    row.setPropertyValue('CellBackColor', 0xdedede)
+    def write_to_xls(self):
+        # connect
+        from unotools.unohelper import convert_path_to_url
 
-                    row.setPropertyValues(keys, border_lines)
+        context = unotools.connect(unotools.Socket(host=sohost, port=soport))
+        calc = Calc(context)
+        filled_issue = 0
 
-                line.setDataArray(((iss.project_name,
-                                   iss.issue_title,
-                                   str(datetime.datetime.fromtimestamp(issue.created + 18000).strftime(
-                                       '%d-%m-%Y %H:%M')),
-                                   date_closing,
-                                   seconds_to_time(iss.time_estimate) + ' h',
-                                   seconds_to_time(iss.time_spent) + ' h'
-                                   ),))
-                ts += iss.time_spent
-                te += iss.time_estimate
-                filled_issue += 1
 
-                lines += 1
+        # create tables of assignees
+        for assignee in assignees:
 
-        sheet.get_cell_by_position(estimate_column, 2).setString(seconds_to_time(te) + ' h')
-        sheet.get_cell_by_position(spend_column, 2).setString(seconds_to_time(ts) + ' h')
-        sheet.get_cell_range_by_position(1, 0, 1, 0).Columns.Width = 6000
-        sheet.get_cell_range_by_position(4, 0, 5, 2).Columns.OptimalWidth = True
-    calc.remove_sheets_by_name('Sheet1')
-    print(filled_issue, 'issues from', len(issues), 'have assignee')
-            # issues_sheet[1:10, 5].border_right_width = 1
+            try:
+                name, _ = map(lambda x: x.strip(), assignee.split('@'))
+            except ValueError:
+                name = assignee.strip()
+
+            calc.insert_sheets_new_by_name(name, 0)  # returns None
+
+            sheet = calc.get_sheet_by_name(name)
+
+            self.fill_header(sheet,name)
+
+            print('filling report of: ' + assignee)
+            # make headers:
+
+
+            # total ts and te of assignee
+            lines = 3  # start count from 1 row [in GUI 2]
+            ts, te = 0, 0
+            from time import time
+            """
+            for issue in issues:
+                if issue.assignee == assignee:
+                    iss = OLAP.select().where(OLAP.issue_id == issue.issue_id).get()
+                    line = sheet.get_cell_range_by_position(0, lines, 5, lines)
+
+                    date_closing = get_date_closing(issue)
+                    if date_closing != '':
+                        row = sheet.get_cell_range_by_position(0, lines, 5, lines)
+                        row.setPropertyValue('CellBackColor', 0xdedede)
+
+                        row.setPropertyValues(self.keys, self.border_lines)
+
+                    line.setDataArray(((iss.project_name,
+                                       iss.issue_title,
+                                       str(datetime.datetime.fromtimestamp(issue.created + 18000).strftime(
+                                           '%d-%m-%Y %H:%M')),
+                                       date_closing,
+                                       seconds_to_time(iss.time_estimate) + ' h',
+                                       seconds_to_time(iss.time_spent) + ' h'),))
+                    ts += iss.time_spent
+                    te += iss.time_estimate
+                    filled_issue += 1
+
+                    lines += 1
+
+            sheet.get_cell_by_position(self.estimate_column, 2).setString(seconds_to_time(te) + ' h')
+            sheet.get_cell_by_position(self.spend_column, 2).setString(seconds_to_time(ts) + ' h')
+            sheet.get_cell_range_by_position(1, 0, 1, 0).Columns.Width = 6000
+            sheet.get_cell_range_by_position(4, 0, 5, 2).Columns.OptimalWidth = True
+            """
+        calc.remove_sheets_by_name('Sheet1')
+        print(filled_issue, 'issues from', len(issues), 'have assignee')
+        # issues_sheet[1:10, 5].border_right_width = 1
 
 
         # todo $3
@@ -434,6 +453,5 @@ if __name__ == '__main__':
     calc_times(issues)
 
     print('writing to xlsx')
-    write_to_xls()
-
+    filled_report = ReportCalc()
 
