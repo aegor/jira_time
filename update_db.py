@@ -313,6 +313,15 @@ class ReportCalc:
         for w in weeks:
             cell = sheet.get_cell_by_position(6+weeks.index(w)*2,1)
             cell.setString(w)
+            cells = sheet.get_cell_range_by_position(6+weeks.index(w)*2,1,7+weeks.index(w)*2,1)
+            cells.merge(True)
+            align = cell.getPropertyValue('HoriJustify')
+            align.value = 'CENTER'
+            cells.setPropertyValue('HoriJustify', align)
+            estimate = sheet.get_cell_by_position(6+weeks.index(w)*2,2).setString("План")
+            spent = sheet.get_cell_by_position(7+weeks.index(w)*2,2).setString("Факт")
+
+
 
         before.merge(True)
         align = before.getPropertyValue('HoriJustify')
