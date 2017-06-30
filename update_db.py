@@ -463,7 +463,7 @@ if __name__ == '__main__':
     print('Init gl')
     gl = login_gl()
     print('Prepare issues...')
-    #prepare_issues(gl)
+    prepare_issues(gl)
     read_issues(dbname)
     print('Write to csv file...')
     write_issues_to_csv(issues)

@@ -20,7 +20,7 @@ class OLAP(Model):
     issue_title = CharField(null=True)
     assignee = CharField(null=True)
     created = IntegerField(null=True)
-    state = ChoiceField(choices=('closed', 'opened'), default='opened')
+    state = ChoiceField(choices=('closed', 'opened', 'reopened'), default='opened')
     time_estimate = IntegerField(null=True)
     time_spent = IntegerField(null=True)
     updated = IntegerField(null=True)
