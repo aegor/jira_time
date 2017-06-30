@@ -342,7 +342,7 @@ class ReportCalc:
         # make row of result green with borders
         # green background for total time
 
-        green_row = sheet.get_cell_range_by_position(0, 3, 5, 3)
+        green_row = sheet.get_cell_range_by_position(0, 3, 13, 3)
         green_row.setPropertyValue('CellBackColor', 0x00aa00)
         green_row.setPropertyValues(self.keys, self.border_lines)
 
@@ -379,8 +379,6 @@ class ReportCalc:
             # total ts and te of assignee
             lines = 4  # start count from 1 row [in GUI 2]
             ts, te = 0, 0
-            from time import time
-            """
             for issue in issues:
                 if issue.assignee == assignee:
                     iss = OLAP.select().where(OLAP.issue_id == issue.issue_id).get()
@@ -388,7 +386,7 @@ class ReportCalc:
 
                     date_closing = get_date_closing(issue)
                     if date_closing != '':
-                        row = sheet.get_cell_range_by_position(0, lines, 5, lines)
+                        row = sheet.get_cell_range_by_position(0, lines, 13, lines)
                         row.setPropertyValue('CellBackColor', 0xdedede)
 
                         row.setPropertyValues(self.keys, self.border_lines)
@@ -410,7 +408,6 @@ class ReportCalc:
             sheet.get_cell_by_position(self.spend_column, 3).setString(seconds_to_time(ts) + ' h')
             sheet.get_cell_range_by_position(1, 0, 1, 0).Columns.Width = 6000
             sheet.get_cell_range_by_position(4, 0, 5, 2).Columns.OptimalWidth = True
-            """
         calc.remove_sheets_by_name('Sheet1')
         print(filled_issue, 'issues from', len(issues), 'have assignee')
         # issues_sheet[1:10, 5].border_right_width = 1
