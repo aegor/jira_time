@@ -298,12 +298,22 @@ class ReportCalc:
             last_issue.updated).strftime(
             '%d-%m-%Y %H:%M')
 
+
+    def get_friday(self, day: datetime.datetime):
+        if day.weekday() != 4:
+            while (day.weekday() != 4):
+                day = day + datetime.timedelta(days=1)
+        return day
+
     def get_last_sec(self, day: datetime.datetime):
+
         d = datetime.datetime(day.year,
                               day.month,
                               day.day,
                               23, 59)
-        return datetime.datetime.timestamp(d)
+        return datetime.datetime.timestamp(self.get_friday(d))
+
+
 
     def fill_header(self, sheet, name):
         """fill header of sheet with current assignee"""
@@ -316,20 +326,20 @@ class ReportCalc:
                    self.estimate_column,
                    self.spend_column]
         # fill service data
-        before = sheet.get_cell_range_by_position(4,1,5,1)
+        before = sheet.get_cell_range_by_position(4, 1, 5, 1)
         before_date = 'date'
         before.setDataArray(((before_date,''),))
-        weeks = ['w1','w2','w3','w4']
+        weeks = ['w1', 'w2', 'w3', 'w4']
         for w in weeks:
-            cell = sheet.get_cell_by_position(6+weeks.index(w)*2,1)
+            cell = sheet.get_cell_by_position(6+weeks.index(w)*2, 1)
             cell.setString(w)
-            cells = sheet.get_cell_range_by_position(6+weeks.index(w)*2,1,7+weeks.index(w)*2,1)
+            cells = sheet.get_cell_range_by_position(6+weeks.index(w)*2, 1, 7+weeks.index(w)*2, 1)
             cells.merge(True)
             align = cell.getPropertyValue('HoriJustify')
             align.value = 'CENTER'
             cells.setPropertyValue('HoriJustify', align)
-            sheet.get_cell_by_position(6+weeks.index(w)*2,2).setString("План")
-            sheet.get_cell_by_position(7+weeks.index(w)*2,2).setString("Факт")
+            sheet.get_cell_by_position(6+weeks.index(w)*2, 2).setString("План")
+            sheet.get_cell_by_position(7+weeks.index(w)*2, 2).setString("Факт")
 
 
 
