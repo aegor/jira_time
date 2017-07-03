@@ -48,7 +48,7 @@ class Issue:
             else:
                 converted_datetime = datetime.datetime.fromtimestamp(0)
 
-            return int(converted_datetime.timestamp()) - 18000  # 18000 - +5h - Ekaterinburg
+            return int(converted_datetime.timestamp()) # 18000 - +5h - Ekaterinburg
         else:
             return ''
 
@@ -210,7 +210,7 @@ def calc_times(issues):
     """for assignees in db calculate estimate and spent time and add this on db localbase.db(sqlite3)"""
     # Assignees DB
     # format: assignees = {'assignee email': {'time_estimate': secs, 'time_spent': secs}}
-    up_time = int(datetime.datetime.now().timestamp())
+    up_time = int(datetime.datetime.now().timestamp()) - 18000
 
     for issue in issues:
         key = issue.assignee
@@ -264,11 +264,8 @@ def read_issues(dbname):
         # db.close() !!! strange... always call sync, even on readonly file??? Why?
 
 
-def get_date_closing(issue):
-    last_issue = OLAP.select(OLAP.issue_id, fn.Min(OLAP.updated)).where((OLAP.issue_id == issue.issue_id) &
-                                                                        (OLAP.state == 'closed')).get()
-    return '' if last_issue.updated is None else datetime.datetime.fromtimestamp(last_issue.updated + 18000).strftime(
-        '%d-%m-%Y %H:%M')
+
+
 class ReportCalc:
 
     line = uno.createUnoStruct('com.sun.star.table.BorderLine2')
@@ -294,6 +291,19 @@ class ReportCalc:
         self.write_to_xls()
     # uno vars for border lines
 
+    def get_date_closing(self, issue):
+        last_issue = OLAP.select(OLAP.issue_id, fn.Min(OLAP.updated)).where((OLAP.issue_id == issue.issue_id) &
+                                                                            (OLAP.state == 'closed')).get()
+        return '' if last_issue.updated is None else datetime.datetime.fromtimestamp(
+            last_issue.updated).strftime(
+            '%d-%m-%Y %H:%M')
+
+    def get_last_sec(self, day: datetime.datetime):
+        d = datetime.datetime(day.year,
+                              day.month,
+                              day.day,
+                              23, 59)
+        return datetime.datetime.timestamp(d)
 
     def fill_header(self, sheet, name):
         """fill header of sheet with current assignee"""
@@ -360,7 +370,7 @@ class ReportCalc:
 
         # create tables of assignees
         for assignee in assignees:
-
+            # get name of assignee
             try:
                 name, _ = map(lambda x: x.strip(), assignee.split('@'))
             except ValueError:
@@ -384,7 +394,7 @@ class ReportCalc:
                     iss = OLAP.select().where(OLAP.issue_id == issue.issue_id).get()
                     line = sheet.get_cell_range_by_position(0, lines, 5, lines)
 
-                    date_closing = get_date_closing(issue)
+                    date_closing = self.get_date_closing(issue)
                     if date_closing != '':
                         row = sheet.get_cell_range_by_position(0, lines, 13, lines)
                         row.setPropertyValue('CellBackColor', 0xdedede)
