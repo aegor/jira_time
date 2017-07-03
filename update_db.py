@@ -48,7 +48,7 @@ class Issue:
             else:
                 converted_datetime = datetime.datetime.fromtimestamp(0)
 
-            return int(converted_datetime.timestamp()) # 18000 - +5h - Ekaterinburg
+            return int(converted_datetime.timestamp())  # 18000 - +5h - Ekaterinburg
         else:
             return ''
 
@@ -328,14 +328,15 @@ class ReportCalc:
         # fill service data
         before = sheet.get_cell_range_by_position(4, 1, 5, 1)
         before_date = 'date'
-        before.setDataArray(((before_date,''),))
+        before.setDataArray(((before_date, ''),))
+
         weeks = ['w1', 'w2', 'w3', 'w4']
         for w in weeks:
             cell = sheet.get_cell_by_position(6+weeks.index(w)*2, 1)
             cell.setString(w)
             cells = sheet.get_cell_range_by_position(6+weeks.index(w)*2, 1, 7+weeks.index(w)*2, 1)
             cells.merge(True)
-            align = cell.getPropertyValue('HoriJustify')
+            align = cell.getPropertyValue('HoriJustify')  # property of align 'VertJustify' had too
             align.value = 'CENTER'
             cells.setPropertyValue('HoriJustify', align)
             sheet.get_cell_by_position(6+weeks.index(w)*2, 2).setString("План")
