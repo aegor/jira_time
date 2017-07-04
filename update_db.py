@@ -33,7 +33,8 @@ assignees = {}
 class Issue:
     """methods and structure of issue"""
 
-    def _convert_time(self, time_string: str):
+    @staticmethod
+    def _convert_time(time_string: str):
         """:returns int of UNIX time from string in format '%Y-%m-%dT%H:%M:%S.%fZ' or '%Y-%m-%d'"""
         if time_string is not None:
             if 'T' in time_string:
@@ -56,7 +57,7 @@ class Issue:
         # todo see down
         # updating created time for issue in db, remove it after updating
 
-        q = OLAP.update(created=self._convert_time(issue.created_at)).where(OLAP.issue_id==issue.id)
+        q = OLAP.update(created=self._convert_time(issue.created_at)).where(OLAP.issue_id == issue.id)
         q.execute()
 
         self.project_id = str(issue.project_id)
@@ -263,6 +264,14 @@ def read_issues(dbname):
         issues.append(db[i])
         # db.close() !!! strange... always call sync, even on readonly file??? Why?
 
+class ReportIssue:
+    def __init__(self, issue, before, ranges):
+        self.issue = issue
+        self.before = before
+        self.ranges = ranges
+
+    def generate_report(self):
+        pass
 
 
 
@@ -313,7 +322,6 @@ class ReportCalc:
 
 
     def get_last_sec(self, day: datetime.datetime):
-
         d = datetime.datetime(day.year,
                               day.month,
                               day.day,
@@ -358,18 +366,7 @@ class ReportCalc:
                    self.estimate_column,
                    self.spend_column]
         # fill service data
-        before = sheet.get_cell_range_by_position(4, 1, 5, 1)
-        before_date = 'date'
-        before.setDataArray(((before_date, ''),))
 
-
-
-
-
-        before.merge(True)
-        align = before.getPropertyValue('HoriJustify')
-        align.value = 'CENTER'
-        before.setPropertyValue('HoriJustify', align)
         sheet.get_cell_range_by_position(0, 2, 5, 2).setDataArray(((tuple(self.column_names)),))
         #for text in columns:
         #    sheet.get_cell_by_position(text, 1).setDataArray(((self.column_names[columns.index(text)],),))
@@ -420,12 +417,22 @@ class ReportCalc:
 
             weeks = []
             this_week_num = w4_end.isocalendar()[1]
-
+            before_date = ''
             for week in reversed(range(1,4)):
                 days_range = self.get_range_days_of_week(this_week_num-week, 0, 6)
-                weeks.append(days_range[0].strftime('%d %m %Y') + ' - ' + days_range[1].strftime('%d %m %Y') )
+                weeks.append(days_range[0].strftime('%d %m %Y') + ' - ' + days_range[1].strftime('%d %m %Y'))
+                if before_date == '':
+                    before_date = self.get_range_days_of_week(this_week_num-week-1,0,6)[1]
 
             weeks.append( str(w4_start.strftime('%d %m %Y')) + ' - ' + str(w4_end.strftime('%d %m %Y')))
+            # filling before
+            before = sheet.get_cell_range_by_position(4, 1, 5, 1)
+
+            before.setDataArray((('< ' + before_date.strftime('%d %m %Y') , ''),))
+            before.merge(True)
+            align = before.getPropertyValue('HoriJustify')
+            align.value = 'CENTER'
+            before.setPropertyValue('HoriJustify', align)
 
             for w in weeks:
                 cell = sheet.get_cell_by_position(6 + weeks.index(w) * 2, 1)
@@ -437,6 +444,7 @@ class ReportCalc:
                 cells.setPropertyValue('HoriJustify', align)
                 sheet.get_cell_by_position(6 + weeks.index(w) * 2, 2).setString("План")
                 sheet.get_cell_by_position(7 + weeks.index(w) * 2, 2).setString("Факт")
+
 
             print('filling report of: ' + assignee)
             # make headers:
@@ -530,7 +538,8 @@ if __name__ == '__main__':
     print('Init gl')
     gl = login_gl()
     print('Prepare issues...')
-    prepare_issues(gl)
+    #prepare_issues(gl)
+    # todo uncomment string ^
     read_issues(dbname)
     print('Write to csv file...')
     write_issues_to_csv(issues)
