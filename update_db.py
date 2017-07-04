@@ -299,11 +299,18 @@ class ReportCalc:
             '%d-%m-%Y %H:%M')
 
 
-    def get_friday(self, day: datetime.datetime):
-        if day.weekday() != 4:
-            while (day.weekday() != 4):
+    def get_day(self, day: datetime.datetime, index: int):
+        """count of index starts from zero"""
+        if day.weekday() == index:
+            pass
+        elif day.weekday()  > index:
+            while (day.weekday() != index):
+                day = day - datetime.timedelta(days=1)
+        elif day.weekday() < index:
+            while (day.weekday() != index):
                 day = day + datetime.timedelta(days=1)
         return day
+
 
     def get_last_sec(self, day: datetime.datetime):
 
@@ -311,9 +318,34 @@ class ReportCalc:
                               day.month,
                               day.day,
                               23, 59)
-        return datetime.datetime.timestamp(self.get_friday(d))
+        return datetime.datetime.timestamp(d)
 
+    def get_middle_day_of_week(self, week_number):
+        counted_week = datetime.datetime.today()
+        while counted_week.isocalendar()[1] != week_number:
+            if counted_week.isocalendar()[1] < week_number:
+                counted_week = counted_week + datetime.timedelta(weeks=1)
+            elif counted_week.isocalendar()[1] > week_number:
+                counted_week = counted_week - datetime.timedelta(weeks=1)
+            else:
+                pass
 
+        # set on middle
+        while counted_week.weekday() != 2:
+            if counted_week.weekday() > 2:
+                counted_week = counted_week - datetime.timedelta(days=1)
+            elif counted_week.weekday() < 2:
+                counted_week = counted_week + datetime.timedelta(days=1)
+            else:
+                pass
+
+        return counted_week
+
+    def get_range_days_of_week(self, week_number, min, max):
+        middle_day = self.get_middle_day_of_week(week_number)
+        min = self.get_day(middle_day, min)
+        max = self.get_day(middle_day, max)
+        return (min, max)
 
     def fill_header(self, sheet, name):
         """fill header of sheet with current assignee"""
@@ -330,17 +362,7 @@ class ReportCalc:
         before_date = 'date'
         before.setDataArray(((before_date, ''),))
 
-        weeks = ['w1', 'w2', 'w3', 'w4']
-        for w in weeks:
-            cell = sheet.get_cell_by_position(6+weeks.index(w)*2, 1)
-            cell.setString(w)
-            cells = sheet.get_cell_range_by_position(6+weeks.index(w)*2, 1, 7+weeks.index(w)*2, 1)
-            cells.merge(True)
-            align = cell.getPropertyValue('HoriJustify')  # property of align 'VertJustify' had too
-            align.value = 'CENTER'
-            cells.setPropertyValue('HoriJustify', align)
-            sheet.get_cell_by_position(6+weeks.index(w)*2, 2).setString("План")
-            sheet.get_cell_by_position(7+weeks.index(w)*2, 2).setString("Факт")
+
 
 
 
@@ -393,6 +415,26 @@ class ReportCalc:
 
             self.fill_header(sheet,name)
 
+            w4_end = self.get_day(datetime.datetime.now(),4)
+            w4_start =self.get_day(datetime.datetime.now(),0)
+
+            weeks = []
+            this_week_num = w4_end.isocalendar()[1]
+
+
+            weeks.append( str(w4_start.strftime('%d %m %Y')) + ' - ' + str(w4_end.strftime('%d %m %Y')))
+
+            for w in weeks:
+                cell = sheet.get_cell_by_position(6 + weeks.index(w) * 2, 1)
+                cell.setString(w)
+                cells = sheet.get_cell_range_by_position(6 + weeks.index(w) * 2, 1, 7 + weeks.index(w) * 2, 1)
+                cells.merge(True)
+                align = cell.getPropertyValue('HoriJustify')  # property of align 'VertJustify' had too
+                align.value = 'CENTER'
+                cells.setPropertyValue('HoriJustify', align)
+                sheet.get_cell_by_position(6 + weeks.index(w) * 2, 2).setString("План")
+                sheet.get_cell_by_position(7 + weeks.index(w) * 2, 2).setString("Факт")
+
             print('filling report of: ' + assignee)
             # make headers:
 
@@ -424,6 +466,7 @@ class ReportCalc:
                     filled_issue += 1
 
                     lines += 1
+                    del issue
 
             sheet.get_cell_by_position(self.estimate_column, 3).setString(seconds_to_time(te) + ' h')
             sheet.get_cell_by_position(self.spend_column, 3).setString(seconds_to_time(ts) + ' h')
