@@ -421,6 +421,9 @@ class ReportCalc:
             weeks = []
             this_week_num = w4_end.isocalendar()[1]
 
+            for week in reversed(range(1,4)):
+                days_range = self.get_range_days_of_week(this_week_num-week, 0, 6)
+                weeks.append(days_range[0].strftime('%d %m %Y') + ' - ' + days_range[1].strftime('%d %m %Y') )
 
             weeks.append( str(w4_start.strftime('%d %m %Y')) + ' - ' + str(w4_end.strftime('%d %m %Y')))
 
