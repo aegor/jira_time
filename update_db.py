@@ -266,12 +266,20 @@ def read_issues(dbname):
 
 class ReportIssue:
     def __init__(self, issue, before, ranges):
+
         self.issue = issue
         self.before = before
         self.ranges = ranges
 
     def generate_report(self):
-        pass
+        """preparing report for current issue"""
+        OLAP_data = OLAP.select().where(OLAP.issue_id==self.issue.issue_id)
+
+        # old issues
+        issue_data = []
+        for field in OLAP_data:
+            issue_data.append(field)
+        print(issue_data)
 
 
 
