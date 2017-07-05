@@ -264,6 +264,7 @@ def read_issues(dbname):
         issues.append(db[i])
         # db.close() !!! strange... always call sync, even on readonly file??? Why?
 
+
 class ReportIssue:
     def __init__(self, issue, before, ranges):
 
@@ -273,14 +274,14 @@ class ReportIssue:
 
     def generate_report(self):
         """preparing report for current issue"""
-        OLAP_data = OLAP.select().where(OLAP.issue_id==self.issue.issue_id)
+        OLAP_data = OLAP.select().where(OLAP.issue_id == self.issue.issue_id)
 
         # old issues
         issue_data = []
         for field in OLAP_data:
             issue_data.append(field)
+            print((field))
         print(issue_data)
-
 
 
 class ReportCalc:
@@ -315,7 +316,6 @@ class ReportCalc:
             last_issue.updated).strftime(
             '%d-%m-%Y %H:%M')
 
-
     def get_day(self, day: datetime.datetime, index: int):
         """count of index starts from zero"""
         if day.weekday() == index:
@@ -327,7 +327,6 @@ class ReportCalc:
             while (day.weekday() != index):
                 day = day + datetime.timedelta(days=1)
         return day
-
 
     def get_last_sec(self, day: datetime.datetime):
         d = datetime.datetime(day.year,
@@ -366,7 +365,7 @@ class ReportCalc:
     def fill_header(self, sheet, name):
         """fill header of sheet with current assignee"""
 
-         # data of columns
+        # data of columns
         columns = [self.project_column,
                    self.issues_column,
                    self.opened_column,
@@ -376,7 +375,7 @@ class ReportCalc:
         # fill service data
 
         sheet.get_cell_range_by_position(0, 2, 5, 2).setDataArray(((tuple(self.column_names)),))
-        #for text in columns:
+        # for text in columns:
         #    sheet.get_cell_by_position(text, 1).setDataArray(((self.column_names[columns.index(text)],),))
         sheet.get_cell_range_by_position(2, 0, 3, 2).Columns.Width = 4000
 
@@ -394,9 +393,6 @@ class ReportCalc:
         green_row.setPropertyValue('CellBackColor', 0x00aa00)
         green_row.setPropertyValues(self.keys, self.border_lines)
 
-
-
-
     def write_to_xls(self):
         # connect
         from unotools.unohelper import convert_path_to_url
@@ -404,7 +400,6 @@ class ReportCalc:
         context = unotools.connect(unotools.Socket(host=sohost, port=soport))
         calc = Calc(context)
         filled_issue = 0
-
 
         # create tables of assignees
         for assignee in assignees:
@@ -421,7 +416,7 @@ class ReportCalc:
             self.fill_header(sheet,name)
 
             w4_end = self.get_day(datetime.datetime.now(),4)
-            w4_start =self.get_day(datetime.datetime.now(),0)
+            w4_start = self.get_day(datetime.datetime.now(),0)
 
             weeks = []
             this_week_num = w4_end.isocalendar()[1]
@@ -436,7 +431,7 @@ class ReportCalc:
             # filling before
             before = sheet.get_cell_range_by_position(4, 1, 5, 1)
 
-            before.setDataArray((('< ' + before_date.strftime('%d %m %Y') , ''),))
+            before.setDataArray((('< ' + before_date.strftime('%d %m %Y'), ''),))
             before.merge(True)
             align = before.getPropertyValue('HoriJustify')
             align.value = 'CENTER'
@@ -453,16 +448,16 @@ class ReportCalc:
                 sheet.get_cell_by_position(6 + weeks.index(w) * 2, 2).setString("План")
                 sheet.get_cell_by_position(7 + weeks.index(w) * 2, 2).setString("Факт")
 
-
             print('filling report of: ' + assignee)
             # make headers:
-
 
             # total ts and te of assignee
             lines = 4  # start count from 1 row [in GUI 2]
             ts, te = 0, 0
             for issue in issues:
                 if issue.assignee == assignee:
+                    report_issue = ReportIssue(issue, before_date, weeks)
+                    report_issue.generate_report()
                     iss = OLAP.select().where(OLAP.issue_id == issue.issue_id).get()
                     line = sheet.get_cell_range_by_position(0, lines, 5, lines)
 
@@ -495,10 +490,9 @@ class ReportCalc:
         print(filled_issue, 'issues from', len(issues), 'have assignee')
         # issues_sheet[1:10, 5].border_right_width = 1
 
-
         # todo $3
-        #doc.save(xls_file, pyoo.FILTER_EXCEL_2007)
-        #doc.close()
+        # doc.save(xls_file, pyoo.FILTER_EXCEL_2007)
+        # doc.close()
 
 
 def check_office_server():
@@ -546,7 +540,7 @@ if __name__ == '__main__':
     print('Init gl')
     gl = login_gl()
     print('Prepare issues...')
-    #prepare_issues(gl)
+#    prepare_issues(gl)
     # todo uncomment string ^
     read_issues(dbname)
     print('Write to csv file...')
