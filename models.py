@@ -30,6 +30,15 @@ class OLAP(Model):
     milestone_title = TextField(null=True)
     milestone_date = IntegerField(null=True)
 
+    def to_dict(self):
+        r = {}
+        for k in self._data.keys():
+            try:
+                r[k] = str(getattr(self, k))
+            except:
+                r[k] = json.dumps(getattr(self, k))
+        return r
+
     def __str__(self):
         r = {}
         for k in self._data.keys():

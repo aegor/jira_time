@@ -27,6 +27,7 @@ issues = []
 # format: {'assignee email': {'time_estimate': secs, 'time_spent': secs}}
 assignees = {}
 
+UNDERLINE_SINGLE = uno.getConstantByName('com.sun.star.awt.FontUnderline.SINGLE')
 
 # End of globals
 
@@ -133,7 +134,7 @@ def write_issues_to_csv(issues):
         writer.writerow(
             ('id', 'title', 'description', 'projects', 'assignee', 'author', 'created', 'updated', 'due_date',
              'labels', 'state', 'milestone_title', 'milestone_description', 'milestone_created',
-             'milestone_due_date', 'time_estimate', 'time_spent'))
+             'milestone_due_date', 'time_estimate', 'time_spent', 'url'))
         for issue in issues:
             writer.writerow((issue.title, issue.description, issue.project, issue.assignee, issue.author, issue.created,
                              issue.updated,
@@ -266,7 +267,7 @@ def read_issues(dbname):
 
 
 class ReportIssue:
-    def __init__(self, issue, before, ranges):
+    def __init__(self, issue, before: datetime.datetime, ranges):
 
         self.issue = issue
         self.before = before
@@ -275,13 +276,29 @@ class ReportIssue:
     def generate_report(self):
         """preparing report for current issue"""
         OLAP_data = OLAP.select().where(OLAP.issue_id == self.issue.issue_id)
-
+        created = self.issue.created
         # old issues
+        #print()
+
         issue_data = []
+        closed_day = OLAP.select(OLAP.issue_id, fn.Min(OLAP.updated)).where((OLAP.issue_id == self.issue.issue_id) &
+                                                                            (OLAP.state == 'closed')).get()
+        if closed_day.updated is not None:
+            if closed_day.updated < self.before.timestamp():
+                print(self.issue)
+
+                # todo make filling report of old issue
+                pass
+
+            else:
+                # todo make check report whose not closed and
+                pass
+
         for field in OLAP_data:
-            issue_data.append(field)
-            print((field))
-        print(issue_data)
+            issue_data.append(field.to_dict())
+            #print((field))
+        #print(issue_data)
+
 
 
 class ReportCalc:
@@ -459,7 +476,7 @@ class ReportCalc:
                     report_issue = ReportIssue(issue, before_date, weeks)
                     report_issue.generate_report()
                     iss = OLAP.select().where(OLAP.issue_id == issue.issue_id).get()
-                    line = sheet.get_cell_range_by_position(0, lines, 5, lines)
+                    line = sheet.get_cell_range_by_position(0, lines, 3, lines)
 
                     date_closing = self.get_date_closing(issue)
                     if date_closing != '':
@@ -472,9 +489,13 @@ class ReportCalc:
                                        iss.issue_title,
                                        str(datetime.datetime.fromtimestamp(issue.created + 18000).strftime(
                                            '%d-%m-%Y %H:%M')),
-                                       date_closing,
-                                       seconds_to_time(iss.time_estimate) + ' h',
-                                       seconds_to_time(iss.time_spent) + ' h'),))
+                                       date_closing,),))
+
+                    hyperlink_issue = issue.url
+                    title = sheet.get_cell_by_position(1, lines)
+                    title.Text.Hyperlink = hyperlink_issue
+                    title.Text.CharUnderline = UNDERLINE_SINGLE
+                    title.Text.CharColor = 0x0000aa
                     ts += iss.time_spent
                     te += iss.time_estimate
                     filled_issue += 1
@@ -482,8 +503,8 @@ class ReportCalc:
                     lines += 1
                     del issue
 
-            sheet.get_cell_by_position(self.estimate_column, 3).setString(seconds_to_time(te) + ' h')
-            sheet.get_cell_by_position(self.spend_column, 3).setString(seconds_to_time(ts) + ' h')
+            #№sheet.get_cell_by_position(self.estimate_column, 3).setString(seconds_to_time(te) + ' h')
+            #sheet.get_cell_by_position(self.spend_column, 3).setString(seconds_to_time(ts) + ' h')
             sheet.get_cell_range_by_position(1, 0, 1, 0).Columns.Width = 6000
             sheet.get_cell_range_by_position(4, 0, 5, 2).Columns.OptimalWidth = True
         calc.remove_sheets_by_name('Sheet1')
