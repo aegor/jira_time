@@ -279,18 +279,21 @@ class ReportIssue:
         created = self.issue.created
         # old issues
         #print()
-
         issue_data = []
-        closed_day = OLAP.select(OLAP.issue_id, fn.Min(OLAP.updated)).where((OLAP.issue_id == self.issue.issue_id) &
-                                                                            (OLAP.state == 'closed')).get()
+        closed_day = OLAP.select(OLAP.issue_id,
+                                 fn.Min(OLAP.updated),
+                                 OLAP.time_estimate,
+                                 OLAP.time_spent).where((OLAP.issue_id == self.issue.issue_id) &
+                                                        (OLAP.state == 'closed')).get()
         if closed_day.updated is not None:
             if closed_day.updated < self.before.timestamp():
-                print(self.issue)
-
-                # todo make filling report of old issue
-                pass
+                #print(closed_day)
+                return ( seconds_to_time(closed_day.time_estimate) + ' h', seconds_to_time(closed_day.time_spent) + ' h','',  '', '', '', '', '', '', '')
 
             else:
+                for w in self.ranges:
+                    print(2*(1+self.ranges.index(w)))
+                    #print(self.ranges.index(w))
                 # todo make check report whose not closed and
                 pass
 
@@ -298,7 +301,8 @@ class ReportIssue:
             issue_data.append(field.to_dict())
             #print((field))
         #print(issue_data)
-
+        print()
+        return ('a', 'b', 'c', 'd', 'e', 'r', 'f', 'q', 'w', 'j')
 
 
 class ReportCalc:
@@ -436,10 +440,12 @@ class ReportCalc:
             w4_start = self.get_day(datetime.datetime.now(),0)
 
             weeks = []
+            weeks_timestamp = []
             this_week_num = w4_end.isocalendar()[1]
             before_date = ''
             for week in reversed(range(1,4)):
                 days_range = self.get_range_days_of_week(this_week_num-week, 0, 6)
+                weeks_timestamp.append(days_range)
                 weeks.append(days_range[0].strftime('%d %m %Y') + ' - ' + days_range[1].strftime('%d %m %Y'))
                 if before_date == '':
                     before_date = self.get_range_days_of_week(this_week_num-week-1,0,6)[1]
@@ -473,7 +479,7 @@ class ReportCalc:
             ts, te = 0, 0
             for issue in issues:
                 if issue.assignee == assignee:
-                    report_issue = ReportIssue(issue, before_date, weeks)
+                    report_issue = ReportIssue(issue, before_date, weeks_timestamp)
                     report_issue.generate_report()
                     iss = OLAP.select().where(OLAP.issue_id == issue.issue_id).get()
                     line = sheet.get_cell_range_by_position(0, lines, 3, lines)
@@ -490,12 +496,17 @@ class ReportCalc:
                                        str(datetime.datetime.fromtimestamp(issue.created + 18000).strftime(
                                            '%d-%m-%Y %H:%M')),
                                        date_closing,),))
-
+                    line = sheet.get_cell_range_by_position(4,lines, 13, lines)
+                    t = report_issue.generate_report()
+                    print(type(t))
+                    line.setDataArray(((t),))
                     hyperlink_issue = issue.url
                     title = sheet.get_cell_by_position(1, lines)
                     title.Text.Hyperlink = hyperlink_issue
                     title.Text.CharUnderline = UNDERLINE_SINGLE
                     title.Text.CharColor = 0x0000aa
+                    title.Rows.Height = 600
+
                     ts += iss.time_spent
                     te += iss.time_estimate
                     filled_issue += 1
