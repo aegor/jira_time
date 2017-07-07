@@ -300,8 +300,14 @@ class ReportIssue:
                         report.append(seconds_to_time(closed_day.time_spent) + ' h')
                     elif self.issue.created > ReportCalc.get_first_sec(w[0]):
                         if previous_spent == 0:
+                            current_issue_OLAP = OLAP.select(fn.Max(OLAP.updated),
+                                                             OLAP.time_estimate,
+                                                             OLAP.time_spent).where(OLAP.updated < ReportCalc.get_last_sec(w[1])).get()
 
-                        previous_spent +=
+
+                            previous_spent += current_issue_OLAP.time_spent - previous_spent
+                            report.append(seconds_to_time(previous_spent) + ' h')
+                            report.append(seconds_to_time(closed_day.time_spent) + ' h')
                     else:
                         report.append('')
                         report.append('')
