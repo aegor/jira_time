@@ -278,7 +278,6 @@ class ReportIssue:
         OLAP_data = OLAP.select().where(OLAP.issue_id == self.issue.issue_id)
         created = self.issue.created
         # old issues
-        #print()
         issue_data = []
         closed_day = OLAP.select(OLAP.issue_id,
                                  fn.Min(OLAP.updated),
@@ -287,21 +286,34 @@ class ReportIssue:
                                                         (OLAP.state == 'closed')).get()
         if closed_day.updated is not None:
             if closed_day.updated < self.before.timestamp():
-                #print(closed_day)
-                return ( seconds_to_time(closed_day.time_estimate) + ' h', seconds_to_time(closed_day.time_spent) + ' h','',  '', '', '', '', '', '', '')
+                return (seconds_to_time(closed_day.time_estimate) + ' h'
+                        , seconds_to_time(closed_day.time_spent) + ' h',
+                        '',  '', '', '', '', '', '', '')
 
             else:
+                report = ['', '']
+                previous_spent = 0
                 for w in self.ranges:
-                    print(2*(1+self.ranges.index(w)))
-                    #print(self.ranges.index(w))
-                # todo make check report whose not closed and
-                pass
+                    if (self.issue.created > ReportCalc.get_first_sec(w[0])) \
+                            and (closed_day.updated < ReportCalc.get_last_sec(w[1])):
+                        report.append(seconds_to_time(closed_day.time_estimate) + ' h')
+                        report.append(seconds_to_time(closed_day.time_spent) + ' h')
+                    elif self.issue.created > ReportCalc.get_first_sec(w[0]):
+                        if previous_spent == 0:
 
-        for field in OLAP_data:
-            issue_data.append(field.to_dict())
-            #print((field))
-        #print(issue_data)
-        print()
+                        previous_spent +=
+                    else:
+                        report.append('')
+                        report.append('')
+                    #print(2*(1+self.ranges.index(w)))
+                    print(ReportCalc.get_first_sec(w[0]), ReportCalc.get_last_sec(w[1]))
+                # todo make check report whose not closed and
+                report.append('')
+                report.append('')
+                return tuple(report)
+        else:
+            # todo make report on non complete issue
+            pass
         return ('a', 'b', 'c', 'd', 'e', 'r', 'f', 'q', 'w', 'j')
 
 
@@ -330,14 +342,16 @@ class ReportCalc:
         self.write_to_xls()
     # uno vars for border lines
 
-    def get_date_closing(self, issue):
+    @staticmethod
+    def get_date_closing(issue):
         last_issue = OLAP.select(OLAP.issue_id, fn.Min(OLAP.updated)).where((OLAP.issue_id == issue.issue_id) &
                                                                             (OLAP.state == 'closed')).get()
         return '' if last_issue.updated is None else datetime.datetime.fromtimestamp(
             last_issue.updated).strftime(
             '%d-%m-%Y %H:%M')
 
-    def get_day(self, day: datetime.datetime, index: int):
+    @staticmethod
+    def get_day(day: datetime.datetime, index: int):
         """count of index starts from zero"""
         if day.weekday() == index:
             pass
@@ -349,7 +363,16 @@ class ReportCalc:
                 day = day + datetime.timedelta(days=1)
         return day
 
-    def get_last_sec(self, day: datetime.datetime):
+    @staticmethod
+    def get_first_sec(day: datetime.datetime):
+        d = datetime.datetime(day.year,
+                              day.month,
+                              day.day,
+                              00, 1)
+        return datetime.datetime.timestamp(d)
+
+    @staticmethod
+    def get_last_sec(day: datetime.datetime):
         d = datetime.datetime(day.year,
                               day.month,
                               day.day,
@@ -405,7 +428,6 @@ class ReportCalc:
         sheet.get_cell_by_position(0, 0).setDataArray(((name,),))
         # data of columns
 
-
         sheet.get_cell_by_position(0, 3).setDataArray((("Итого",),))
         # make row of result green with borders
         # green background for total time
@@ -434,10 +456,10 @@ class ReportCalc:
 
             sheet = calc.get_sheet_by_name(name)
 
-            self.fill_header(sheet,name)
+            self.fill_header(sheet, name)
 
-            w4_end = self.get_day(datetime.datetime.now(),4)
-            w4_start = self.get_day(datetime.datetime.now(),0)
+            w4_end = self.get_day(datetime.datetime.now(), 4)
+            w4_start = self.get_day(datetime.datetime.now(), 0)
 
             weeks = []
             weeks_timestamp = []
@@ -448,7 +470,7 @@ class ReportCalc:
                 weeks_timestamp.append(days_range)
                 weeks.append(days_range[0].strftime('%d %m %Y') + ' - ' + days_range[1].strftime('%d %m %Y'))
                 if before_date == '':
-                    before_date = self.get_range_days_of_week(this_week_num-week-1,0,6)[1]
+                    before_date = self.get_range_days_of_week(this_week_num-week-1, 0, 6)[1]
 
             weeks.append( str(w4_start.strftime('%d %m %Y')) + ' - ' + str(w4_end.strftime('%d %m %Y')))
             # filling before
@@ -498,7 +520,6 @@ class ReportCalc:
                                        date_closing,),))
                     line = sheet.get_cell_range_by_position(4,lines, 13, lines)
                     t = report_issue.generate_report()
-                    print(type(t))
                     line.setDataArray(((t),))
                     hyperlink_issue = issue.url
                     title = sheet.get_cell_by_position(1, lines)
