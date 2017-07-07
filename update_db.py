@@ -285,6 +285,7 @@ class ReportIssue:
                                  OLAP.time_spent).where((OLAP.issue_id == self.issue.issue_id) &
                                                         (OLAP.state == 'closed')).get()
         if closed_day.updated is not None:
+            # here working
             if closed_day.updated < self.before.timestamp():
                 return (seconds_to_time(closed_day.time_estimate) + ' h'
                         , seconds_to_time(closed_day.time_spent) + ' h',
@@ -298,16 +299,24 @@ class ReportIssue:
                             and (closed_day.updated < ReportCalc.get_last_sec(w[1])):
                         report.append(seconds_to_time(closed_day.time_estimate) + ' h')
                         report.append(seconds_to_time(closed_day.time_spent) + ' h')
-                    elif self.issue.created > ReportCalc.get_first_sec(w[0]):
+                    elif self.issue.created < ReportCalc.get_first_sec(w[0]):
                         if previous_spent == 0:
                             current_issue_OLAP = OLAP.select(fn.Max(OLAP.updated),
                                                              OLAP.time_estimate,
-                                                             OLAP.time_spent).where(OLAP.updated < ReportCalc.get_last_sec(w[1])).get()
-
-
-                            previous_spent += current_issue_OLAP.time_spent - previous_spent
-                            report.append(seconds_to_time(previous_spent) + ' h')
-                            report.append(seconds_to_time(closed_day.time_spent) + ' h')
+                                                             OLAP.time_spent).where((OLAP.updated < ReportCalc.get_last_sec(w[1])) &
+                                                                                    (OLAP.issue_id == self.issue.issue_id)).get()
+                            print(current_issue_OLAP, previous_spent)
+                            if current_issue_OLAP.time_spent:
+                                previous_spent += current_issue_OLAP.time_spent - previous_spent
+                                print(current_issue_OLAP)
+                                report.append(seconds_to_time(current_issue_OLAP.time_estimate) + ' h')
+                                report.append(seconds_to_time(current_issue_OLAP.time_spent) + ' h')
+                            else:
+                                report.append('')
+                                report.append('')
+                        else:
+                            report.append('')
+                            report.append('')
                     else:
                         report.append('')
                         report.append('')
@@ -316,11 +325,12 @@ class ReportIssue:
                 # todo make check report whose not closed and
                 report.append('')
                 report.append('')
+                print(report)
                 return tuple(report)
         else:
             # todo make report on non complete issue
             pass
-        return ('a', 'b', 'c', 'd', 'e', 'r', 'f', 'q', 'w', 'j')
+        return ('', '', '', '', '', '', '', '', '', '')
 
 
 class ReportCalc:
