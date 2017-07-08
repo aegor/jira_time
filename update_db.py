@@ -294,6 +294,8 @@ class ReportIssue:
             else:
                 report = ['', '']
                 previous_spent = 0
+                ranges_begin = self.ranges[0][0].timestamp()
+                ranges_end = self.ranges[len(self.ranges)][1].timestamp
                 for w in self.ranges:
                     if (self.issue.created > ReportCalc.get_first_sec(w[0])) \
                             and (closed_day.updated < ReportCalc.get_last_sec(w[1])):
@@ -305,7 +307,6 @@ class ReportIssue:
                                                              OLAP.time_estimate,
                                                              OLAP.time_spent).where((OLAP.updated < ReportCalc.get_last_sec(w[1])) &
                                                                                     (OLAP.issue_id == self.issue.issue_id)).get()
-                            print(current_issue_OLAP, previous_spent)
                             if current_issue_OLAP.time_spent:
                                 previous_spent += current_issue_OLAP.time_spent - previous_spent
                                 print(current_issue_OLAP)
@@ -534,7 +535,7 @@ class ReportCalc:
                                        str(datetime.datetime.fromtimestamp(issue.created + 18000).strftime(
                                            '%d-%m-%Y %H:%M')),
                                        date_closing,),))
-                    line = sheet.get_cell_range_by_position(4,lines, 13, lines)
+                    line = sheet.get_cell_range_by_position(4, lines, 13, lines)
                     t = report_issue.generate_report()
                     line.setDataArray(((t),))
                     hyperlink_issue = issue.url
