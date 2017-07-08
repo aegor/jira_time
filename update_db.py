@@ -295,7 +295,7 @@ class ReportIssue:
                 report = ['', '']
                 previous_spent = 0
                 ranges_begin = self.ranges[0][0].timestamp()
-                ranges_end = self.ranges[len(self.ranges)][1].timestamp
+                ranges_end = self.ranges[len(self.ranges)-1][1].timestamp
                 for w in self.ranges:
                     if (self.issue.created > ReportCalc.get_first_sec(w[0])) \
                             and (closed_day.updated < ReportCalc.get_last_sec(w[1])):
@@ -336,6 +336,7 @@ class ReportIssue:
 
 class ReportCalc:
 
+    date_format = '%d %m %Y'
     line = uno.createUnoStruct('com.sun.star.table.BorderLine2')
     line.OuterLineWidth = 1
     keys = ('TopBorder', 'RightBorder', 'BottomBorder', 'LeftBorder')
@@ -361,6 +362,7 @@ class ReportCalc:
 
     @staticmethod
     def get_date_closing(issue):
+        """:return date of cloising of current issue"""
         last_issue = OLAP.select(OLAP.issue_id, fn.Min(OLAP.updated)).where((OLAP.issue_id == issue.issue_id) &
                                                                             (OLAP.state == 'closed')).get()
         return '' if last_issue.updated is None else datetime.datetime.fromtimestamp(
@@ -382,6 +384,7 @@ class ReportCalc:
 
     @staticmethod
     def get_first_sec(day: datetime.datetime):
+        """:return timestamp of 00.01 of current day"""
         d = datetime.datetime(day.year,
                               day.month,
                               day.day,
@@ -390,6 +393,7 @@ class ReportCalc:
 
     @staticmethod
     def get_last_sec(day: datetime.datetime):
+        """return timestamp of 23.59 of current day"""
         d = datetime.datetime(day.year,
                               day.month,
                               day.day,
@@ -482,18 +486,18 @@ class ReportCalc:
             weeks_timestamp = []
             this_week_num = w4_end.isocalendar()[1]
             before_date = ''
-            for week in reversed(range(1,4)):
+            for week in reversed(range(1, 4)):
                 days_range = self.get_range_days_of_week(this_week_num-week, 0, 6)
                 weeks_timestamp.append(days_range)
-                weeks.append(days_range[0].strftime('%d %m %Y') + ' - ' + days_range[1].strftime('%d %m %Y'))
+                weeks.append(days_range[0].strftime(self.date_format) + ' - ' + days_range[1].strftime(self.date_format))
                 if before_date == '':
                     before_date = self.get_range_days_of_week(this_week_num-week-1, 0, 6)[1]
 
-            weeks.append( str(w4_start.strftime('%d %m %Y')) + ' - ' + str(w4_end.strftime('%d %m %Y')))
+            weeks.append(str(w4_start.strftime(self.date_format)) + ' - ' + str(w4_end.strftime(self.date_format)))
             # filling before
             before = sheet.get_cell_range_by_position(4, 1, 5, 1)
 
-            before.setDataArray((('< ' + before_date.strftime('%d %m %Y'), ''),))
+            before.setDataArray((('< ' + before_date.strftime(self.date_format), ''),))
             before.merge(True)
             align = before.getPropertyValue('HoriJustify')
             align.value = 'CENTER'
@@ -552,11 +556,28 @@ class ReportCalc:
                     lines += 1
                     del issue
 
-            #№sheet.get_cell_by_position(self.estimate_column, 3).setString(seconds_to_time(te) + ' h')
-            #sheet.get_cell_by_position(self.spend_column, 3).setString(seconds_to_time(ts) + ' h')
+            # sheet.get_cell_by_position(self.estimate_column, 3).setString(seconds_to_time(te) + ' h')
+            # sheet.get_cell_by_position(self.spend_column, 3).setString(seconds_to_time(ts) + ' h')
             sheet.get_cell_range_by_position(1, 0, 1, 0).Columns.Width = 6000
             sheet.get_cell_range_by_position(4, 0, 5, 2).Columns.OptimalWidth = True
         calc.remove_sheets_by_name('Sheet1')
+        calc.insert_sheets_new_by_name('Список', 0)
+        assignee_sheet = calc.get_sheet_by_index(0)
+        assignee_list = []
+        for assignee in assignees:
+            try:
+                name, _ = map(lambda x: x.strip(), assignee.split('@'))
+            except ValueError:
+                name = assignee.strip()
+            assignee_list.append(name)
+        assignee_list = sorted(assignee_list)
+        for assignee in assignee_list:
+            cell = assignee_sheet.get_cell_by_position(0, assignee_list.index(assignee))
+            cell.setString(assignee)
+            cell.Text.Hyperlink = '#{0}'.format(assignee)
+
+        # here filling hyperlinks of assignee
+
         print(filled_issue, 'issues from', len(issues), 'have assignee')
         # issues_sheet[1:10, 5].border_right_width = 1
 
