@@ -294,14 +294,15 @@ class ReportIssue:
             else:
                 report = ['', '']
                 previous_spent = 0
-                ranges_begin = self.ranges[0][0].timestamp()
-                ranges_end = self.ranges[len(self.ranges)-1][1].timestamp
+                ranges_begin = ReportCalc.get_first_sec(self.ranges[0][0])
+                ranges_end = ReportCalc.get_first_sec(self.ranges[len(self.ranges)-1][1])
                 for w in self.ranges:
-                    if (self.issue.created > ReportCalc.get_first_sec(w[0])) \
-                            and (closed_day.updated < ReportCalc.get_last_sec(w[1])):
+                    if (self.issue.created > ReportCalc.get_first_sec(w[0])) and (closed_day.updated < ReportCalc.get_last_sec(w[1])):
+                        print('hey nigga')
                         report.append(seconds_to_time(closed_day.time_estimate) + ' h')
                         report.append(seconds_to_time(closed_day.time_spent) + ' h')
-                    elif self.issue.created < ReportCalc.get_first_sec(w[0]):
+                    elif (self.issue.created > ReportCalc.get_first_sec(w[0])) and (self.issue.created < ranges_end):
+                        print('hey loh')
                         if previous_spent == 0:
                             current_issue_OLAP = OLAP.select(fn.Max(OLAP.updated),
                                                              OLAP.time_estimate,
@@ -309,12 +310,13 @@ class ReportIssue:
                                                                                     (OLAP.issue_id == self.issue.issue_id)).get()
                             if current_issue_OLAP.time_spent:
                                 previous_spent += current_issue_OLAP.time_spent - previous_spent
-                                print(current_issue_OLAP)
                                 report.append(seconds_to_time(current_issue_OLAP.time_estimate) + ' h')
                                 report.append(seconds_to_time(current_issue_OLAP.time_spent) + ' h')
                             else:
-                                report.append('')
-                                report.append('')
+                                print(self.issue)
+                                print(self.issue.time_estimate, ' 0 ')
+                                report.append(seconds_to_time(self.issue.time_estimate_secs) + ' h')
+                                report.append(seconds_to_time(self.issue.time_spent_secs) + ' h')
                         else:
                             report.append('')
                             report.append('')
@@ -322,11 +324,9 @@ class ReportIssue:
                         report.append('')
                         report.append('')
                     #print(2*(1+self.ranges.index(w)))
-                    print(ReportCalc.get_first_sec(w[0]), ReportCalc.get_last_sec(w[1]))
                 # todo make check report whose not closed and
                 report.append('')
                 report.append('')
-                print(report)
                 return tuple(report)
         else:
             # todo make report on non complete issue
