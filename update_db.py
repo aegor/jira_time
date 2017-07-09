@@ -290,41 +290,48 @@ class ReportIssue:
                 return (seconds_to_time(closed_day.time_estimate) + ' h'
                         , seconds_to_time(closed_day.time_spent) + ' h',
                         '',  '', '', '', '', '', '', '')
-
             else:
                 report = ['', '']
                 previous_spent = 0
                 ranges_begin = ReportCalc.get_first_sec(self.ranges[0][0])
-                ranges_end = ReportCalc.get_first_sec(self.ranges[len(self.ranges)-1][1])
+                ranges_end = ReportCalc.get_last_sec(self.ranges[len(self.ranges)-1][1])
                 for w in self.ranges:
                     if (self.issue.created > ReportCalc.get_first_sec(w[0])) and (closed_day.updated < ReportCalc.get_last_sec(w[1])):
                         report.append(seconds_to_time(closed_day.time_estimate) + ' h')
                         report.append(seconds_to_time(closed_day.time_spent) + ' h')
-                    elif (self.issue.created > ReportCalc.get_first_sec(w[0])) and (self.issue.created < ranges_end):
+                    elif self.issue.created > ReportCalc.get_first_sec(w[0]):
                         if previous_spent == 0:
                             current_issue_OLAP = OLAP.select(fn.Max(OLAP.updated),
                                                              OLAP.time_estimate,
                                                              OLAP.time_spent).where((OLAP.updated < ReportCalc.get_last_sec(w[1])) &
                                                                                     (OLAP.issue_id == self.issue.issue_id)).get()
                             if current_issue_OLAP.time_spent:
-                                previous_spent += current_issue_OLAP.time_spent - previous_spent
+                                previous_spent += current_issue_OLAP.time_spent
                                 report.append(seconds_to_time(current_issue_OLAP.time_estimate) + ' h')
                                 report.append(seconds_to_time(current_issue_OLAP.time_spent) + ' h')
                             else:
-                                print(self.issue)
-                                print(self.issue.time_estimate, ' 0 ')
-                                report.append(seconds_to_time(self.issue.time_estimate_secs) + ' h')
-                                report.append(seconds_to_time(self.issue.time_spent_secs) + ' h')
+                                # todo check on this value
+                                report.append('')
+                                report.append('')
+                               # report.append(seconds_to_time(self.issue.time_estimate_secs) + ' h')
+                               # report.append(seconds_to_time(self.issue.time_spent_secs) + ' h')
                         else:
                             report.append('e')
                             report.append('e')
+                        print(report)
                     else:
                         report.append('')
                         report.append('')
-                    #print(2*(1+self.ranges.index(w)))
+                if self.issue.created > ranges_end:
+
+                    #print(self.issue.created.fromtimestamp(), datetime.dated ranges_end, self.issue.created > ranges_end)
+                    report.append(seconds_to_time(closed_day.time_estimate) + ' h')
+                    report.append(seconds_to_time(closed_day.time_spent) + ' h')
+                else:
+                    report.append('')
+                    report.append('')
                 # todo make check report whose not closed and
-                report.append('')
-                report.append('')
+                print(report)
                 return tuple(report)
         else:
             # todo make report on non complete issue
@@ -465,99 +472,100 @@ class ReportCalc:
 
         # create tables of assignees
         for assignee in assignees:
-            # get name of assignee
-            try:
-                name, _ = map(lambda x: x.strip(), assignee.split('@'))
-            except ValueError:
-                name = assignee.strip()
+            if assignee:
+                # get name of assignee
+                try:
+                    name, _ = map(lambda x: x.strip(), assignee.split('@'))
+                except ValueError:
+                    name = assignee.strip()
 
-            calc.insert_sheets_new_by_name(name, 0)  # returns None
+                calc.insert_sheets_new_by_name(name, 0)  # returns None
 
-            sheet = calc.get_sheet_by_name(name)
+                sheet = calc.get_sheet_by_name(name)
 
-            self.fill_header(sheet, name)
+                self.fill_header(sheet, name)
 
-            w4_end = self.get_day(datetime.datetime.now(), 4)
-            w4_start = self.get_day(datetime.datetime.now(), 0)
+                w4_end = self.get_day(datetime.datetime.now(), 4)
+                w4_start = self.get_day(datetime.datetime.now(), 0)
 
-            weeks = []
-            weeks_timestamp = []
-            this_week_num = w4_end.isocalendar()[1]
-            before_date = ''
-            for week in reversed(range(1, 4)):
-                days_range = self.get_range_days_of_week(this_week_num-week, 0, 6)
-                weeks_timestamp.append(days_range)
-                weeks.append(days_range[0].strftime(self.date_format) + ' - ' + days_range[1].strftime(self.date_format))
-                if before_date == '':
-                    before_date = self.get_range_days_of_week(this_week_num-week-1, 0, 6)[1]
+                weeks = []
+                weeks_timestamp = []
+                this_week_num = w4_end.isocalendar()[1]
+                before_date = ''
+                for week in reversed(range(1, 4)):
+                    days_range = self.get_range_days_of_week(this_week_num-week, 0, 6)
+                    weeks_timestamp.append(days_range)
+                    weeks.append(days_range[0].strftime(self.date_format) + ' - ' + days_range[1].strftime(self.date_format))
+                    if before_date == '':
+                        before_date = self.get_range_days_of_week(this_week_num-week-1, 0, 6)[1]
 
-            weeks.append(str(w4_start.strftime(self.date_format)) + ' - ' + str(w4_end.strftime(self.date_format)))
-            # filling before
-            before = sheet.get_cell_range_by_position(4, 1, 5, 1)
+                weeks.append(str(w4_start.strftime(self.date_format)) + ' - ' + str(w4_end.strftime(self.date_format)))
+                # filling before
+                before = sheet.get_cell_range_by_position(4, 1, 5, 1)
 
-            before.setDataArray((('< ' + before_date.strftime(self.date_format), ''),))
-            before.merge(True)
-            align = before.getPropertyValue('HoriJustify')
-            align.value = 'CENTER'
-            before.setPropertyValue('HoriJustify', align)
-
-            for w in weeks:
-                cell = sheet.get_cell_by_position(6 + weeks.index(w) * 2, 1)
-                cell.setString(w)
-                cells = sheet.get_cell_range_by_position(6 + weeks.index(w) * 2, 1, 7 + weeks.index(w) * 2, 1)
-                cells.merge(True)
-                align = cell.getPropertyValue('HoriJustify')  # property of align 'VertJustify' had too
+                before.setDataArray((('< ' + before_date.strftime(self.date_format), ''),))
+                before.merge(True)
+                align = before.getPropertyValue('HoriJustify')
                 align.value = 'CENTER'
-                cells.setPropertyValue('HoriJustify', align)
-                sheet.get_cell_by_position(6 + weeks.index(w) * 2, 2).setString("План")
-                sheet.get_cell_by_position(7 + weeks.index(w) * 2, 2).setString("Факт")
+                before.setPropertyValue('HoriJustify', align)
 
-            print('filling report of: ' + assignee)
-            # make headers:
+                for w in weeks:
+                    cell = sheet.get_cell_by_position(6 + weeks.index(w) * 2, 1)
+                    cell.setString(w)
+                    cells = sheet.get_cell_range_by_position(6 + weeks.index(w) * 2, 1, 7 + weeks.index(w) * 2, 1)
+                    cells.merge(True)
+                    align = cell.getPropertyValue('HoriJustify')  # property of align 'VertJustify' had too
+                    align.value = 'CENTER'
+                    cells.setPropertyValue('HoriJustify', align)
+                    sheet.get_cell_by_position(6 + weeks.index(w) * 2, 2).setString("План")
+                    sheet.get_cell_by_position(7 + weeks.index(w) * 2, 2).setString("Факт")
 
-            # total ts and te of assignee
-            lines = 4  # start count from 1 row [in GUI 2]
-            ts, te = 0, 0
-            for issue in issues:
-                if issue.assignee == assignee:
-                    report_issue = ReportIssue(issue, before_date, weeks_timestamp)
-                    report_issue.generate_report()
-                    iss = OLAP.select().where(OLAP.issue_id == issue.issue_id).get()
-                    line = sheet.get_cell_range_by_position(0, lines, 3, lines)
+                print('filling report of: ' + assignee)
+                # make headers:
 
-                    date_closing = self.get_date_closing(issue)
-                    if date_closing != '':
-                        row = sheet.get_cell_range_by_position(0, lines, 13, lines)
-                        row.setPropertyValue('CellBackColor', 0xdedede)
+                # total ts and te of assignee
+                lines = 4  # start count from 1 row [in GUI 2]
+                ts, te = 0, 0
+                for issue in issues:
+                    if issue.assignee == assignee:
+                        report_issue = ReportIssue(issue, before_date, weeks_timestamp)
+                        report_issue.generate_report()
+                        iss = OLAP.select().where(OLAP.issue_id == issue.issue_id).get()
+                        line = sheet.get_cell_range_by_position(0, lines, 3, lines)
 
-                        row.setPropertyValues(self.keys, self.border_lines)
+                        date_closing = self.get_date_closing(issue)
+                        if date_closing != '':
+                            row = sheet.get_cell_range_by_position(0, lines, 13, lines)
+                            row.setPropertyValue('CellBackColor', 0xdedede)
 
-                    line.setDataArray(((iss.project_name,
-                                       iss.issue_title,
-                                       str(datetime.datetime.fromtimestamp(issue.created + 18000).strftime(
-                                           '%d-%m-%Y %H:%M')),
-                                       date_closing,),))
-                    line = sheet.get_cell_range_by_position(4, lines, 13, lines)
-                    t = report_issue.generate_report()
-                    line.setDataArray(((t),))
-                    hyperlink_issue = issue.url
-                    title = sheet.get_cell_by_position(1, lines)
-                    title.Text.Hyperlink = hyperlink_issue
-                    title.Text.CharUnderline = UNDERLINE_SINGLE
-                    title.Text.CharColor = 0x0000aa
-                    title.Rows.Height = 600
+                            row.setPropertyValues(self.keys, self.border_lines)
 
-                    ts += iss.time_spent
-                    te += iss.time_estimate
-                    filled_issue += 1
+                        line.setDataArray(((iss.project_name,
+                                           iss.issue_title,
+                                           str(datetime.datetime.fromtimestamp(issue.created + 18000).strftime(
+                                               '%d-%m-%Y %H:%M')),
+                                           date_closing,),))
+                        line = sheet.get_cell_range_by_position(4, lines, 13, lines)
+                        t = report_issue.generate_report()
+                        line.setDataArray(((t),))
+                        hyperlink_issue = issue.url
+                        title = sheet.get_cell_by_position(1, lines)
+                        title.Text.Hyperlink = hyperlink_issue
+                        title.Text.CharUnderline = UNDERLINE_SINGLE
+                        title.Text.CharColor = 0x0000aa
+                        title.Rows.Height = 600
 
-                    lines += 1
-                    del issue
+                        ts += iss.time_spent
+                        te += iss.time_estimate
+                        filled_issue += 1
 
-            # sheet.get_cell_by_position(self.estimate_column, 3).setString(seconds_to_time(te) + ' h')
-            # sheet.get_cell_by_position(self.spend_column, 3).setString(seconds_to_time(ts) + ' h')
-            sheet.get_cell_range_by_position(1, 0, 1, 0).Columns.Width = 6000
-            sheet.get_cell_range_by_position(4, 0, 5, 2).Columns.OptimalWidth = True
+                        lines += 1
+                        del issue
+
+                # sheet.get_cell_by_position(self.estimate_column, 3).setString(seconds_to_time(te) + ' h')
+                # sheet.get_cell_by_position(self.spend_column, 3).setString(seconds_to_time(ts) + ' h')
+                sheet.get_cell_range_by_position(1, 0, 1, 0).Columns.Width = 6000
+                sheet.get_cell_range_by_position(4, 0, 5, 2).Columns.OptimalWidth = True
         calc.remove_sheets_by_name('Sheet1')
         calc.insert_sheets_new_by_name('Список', 0)
         assignee_sheet = calc.get_sheet_by_index(0)
@@ -629,7 +637,7 @@ if __name__ == '__main__':
     print('Init gl')
     gl = login_gl()
     print('Prepare issues...')
-#    prepare_issues(gl)
+    #prepare_issues(gl)
     # todo uncomment string ^
     read_issues(dbname)
     print('Write to csv file...')
