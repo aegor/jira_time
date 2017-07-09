@@ -298,11 +298,9 @@ class ReportIssue:
                 ranges_end = ReportCalc.get_first_sec(self.ranges[len(self.ranges)-1][1])
                 for w in self.ranges:
                     if (self.issue.created > ReportCalc.get_first_sec(w[0])) and (closed_day.updated < ReportCalc.get_last_sec(w[1])):
-                        print('hey nigga')
                         report.append(seconds_to_time(closed_day.time_estimate) + ' h')
                         report.append(seconds_to_time(closed_day.time_spent) + ' h')
                     elif (self.issue.created > ReportCalc.get_first_sec(w[0])) and (self.issue.created < ranges_end):
-                        print('hey loh')
                         if previous_spent == 0:
                             current_issue_OLAP = OLAP.select(fn.Max(OLAP.updated),
                                                              OLAP.time_estimate,
@@ -318,8 +316,8 @@ class ReportIssue:
                                 report.append(seconds_to_time(self.issue.time_estimate_secs) + ' h')
                                 report.append(seconds_to_time(self.issue.time_spent_secs) + ' h')
                         else:
-                            report.append('')
-                            report.append('')
+                            report.append('e')
+                            report.append('e')
                     else:
                         report.append('')
                         report.append('')
