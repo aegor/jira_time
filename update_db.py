@@ -294,7 +294,7 @@ class ReportIssue:
                 report = ['', '']
                 previous_spent = 0
                 ranges_begin = ReportCalc.get_first_sec(self.ranges[0][0])
-                ranges_end = ReportCalc.get_last_sec(self.ranges[len(self.ranges)-1][1])
+                ranges_end = ReportCalc.get_last_sec(self.ranges[len(self.ranges) - 1][1])
                 for w in self.ranges:
                     if (self.issue.created > ReportCalc.get_first_sec(w[0])) and (closed_day.updated < ReportCalc.get_last_sec(w[1])):
                         report.append(seconds_to_time(closed_day.time_estimate) + ' h')
@@ -307,7 +307,7 @@ class ReportIssue:
                                                                                     (OLAP.issue_id == self.issue.issue_id)).get()
                             if current_issue_OLAP.time_spent:
                                 previous_spent += current_issue_OLAP.time_spent
-                                report.append(seconds_to_time(current_issue_OLAP.time_estimate) + ' h')
+                                report.append(seconds_to_time(previous_spent) + ' h')
                                 report.append(seconds_to_time(current_issue_OLAP.time_spent) + ' h')
                             else:
                                 # todo check on this value
@@ -318,25 +318,22 @@ class ReportIssue:
                         else:
                             report.append('e')
                             report.append('e')
-                        print(report)
                     else:
                         report.append('')
                         report.append('')
                 if self.issue.created > ranges_end:
-
-                    #print(self.issue.created.fromtimestamp(), datetime.dated ranges_end, self.issue.created > ranges_end)
+                    # print(self.issue.created.fromtimestamp(), datetime.dated ranges_end, self.issue.created > ranges_end)
                     report.append(seconds_to_time(closed_day.time_estimate) + ' h')
                     report.append(seconds_to_time(closed_day.time_spent) + ' h')
                 else:
                     report.append('')
                     report.append('')
-                # todo make check report whose not closed and
-                print(report)
                 return tuple(report)
         else:
             # todo make report on non complete issue
+
             pass
-        return ('', '', '', '', '', '', '', '', '', '')
+            return ('', '', '', '', '', '', '', '', '', '')
 
 
 class ReportCalc:
@@ -631,13 +628,18 @@ if __name__ == '__main__':
     if len(tables) == 0:
         print('empty db, create table')
         db.create_table(OLAP)
+
     db.close()
     print('Check office server:')
     check_office_server()
     print('Init gl')
     gl = login_gl()
-    print('Prepare issues...')
-    #prepare_issues(gl)
+    ask = input('do you need prepare issues?')
+
+    if ask == 'y':
+        print('Prepare issues...')
+        prepare_issues(gl)
+
     # todo uncomment string ^
     read_issues(dbname)
     print('Write to csv file...')
