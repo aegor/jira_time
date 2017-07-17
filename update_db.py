@@ -7,6 +7,7 @@ import json
 import shelve
 import sys
 import logging
+from collections import namedtuple
 
 # imported libs
 import unotools
@@ -240,6 +241,7 @@ def prepare_issues(gl):
         print('Projects:')
     # Prepare issues database
     for project in projects:
+        #if project.path_with_namespace.startswith('p2p-test'):
         if project.path_with_namespace.startswith('rtk'):
             if plog:
                 print(project.path_with_namespace)
@@ -279,11 +281,15 @@ class ReportIssue:
         created = self.issue.created
         # old issues
         issue_data = []
+
         closed_day = OLAP.select(OLAP.issue_id,
                                  fn.Min(OLAP.updated),
                                  OLAP.time_estimate,
                                  OLAP.time_spent).where((OLAP.issue_id == self.issue.issue_id) &
                                                         (OLAP.state == 'closed')).get()
+        range_template = namedtuple('dates_range', ['begin', 'end'])
+        issue_range = range_template(self.issue.created, closed_day.updated)
+
         if closed_day.updated is not None:
             # here working
             if closed_day.updated < self.before.timestamp():
@@ -293,35 +299,38 @@ class ReportIssue:
             else:
                 report = ['', '']
                 previous_spent = 0
-                ranges_begin = ReportCalc.get_first_sec(self.ranges[0][0])
-                ranges_end = ReportCalc.get_last_sec(self.ranges[len(self.ranges) - 1][1])
+                _ranges = range_template(ReportCalc.get_first_sec(self.ranges[0][0]), ReportCalc.get_last_sec(self.ranges[len(self.ranges) - 1][1]))
                 for w in self.ranges:
+                    current_issue_OLAP = OLAP.select(fn.Max(OLAP.updated),
+                                                     OLAP.time_estimate,
+                                                     OLAP.time_spent).where(
+                        (OLAP.updated < ReportCalc.get_last_sec(w[1])) &
+                        (OLAP.issue_id == self.issue.issue_id)).get()
                     if (self.issue.created > ReportCalc.get_first_sec(w[0])) and (closed_day.updated < ReportCalc.get_last_sec(w[1])):
                         report.append(seconds_to_time(closed_day.time_estimate) + ' h')
                         report.append(seconds_to_time(closed_day.time_spent) + ' h')
                     elif self.issue.created > ReportCalc.get_first_sec(w[0]):
                         if previous_spent == 0:
-                            current_issue_OLAP = OLAP.select(fn.Max(OLAP.updated),
-                                                             OLAP.time_estimate,
-                                                             OLAP.time_spent).where((OLAP.updated < ReportCalc.get_last_sec(w[1])) &
-                                                                                    (OLAP.issue_id == self.issue.issue_id)).get()
                             if current_issue_OLAP.time_spent:
                                 previous_spent += current_issue_OLAP.time_spent
                                 report.append(seconds_to_time(previous_spent) + ' h')
                                 report.append(seconds_to_time(current_issue_OLAP.time_spent) + ' h')
                             else:
                                 # todo check on this value
-                                report.append('')
-                                report.append('')
-                               # report.append(seconds_to_time(self.issue.time_estimate_secs) + ' h')
-                               # report.append(seconds_to_time(self.issue.time_spent_secs) + ' h')
+                                report.append(seconds_to_time(previous_spent) + ' h')
+                                report.append(seconds_to_time(self.issue.time_spent_secs) + ' h')
                         else:
                             report.append('e')
                             report.append('e')
                     else:
-                        report.append('')
-                        report.append('')
-                if self.issue.created > ranges_end:
+                        if issue_range.begin < _ranges.begin and issue_range.end < datetime.datetime.timestamp(w[1]):
+                            report.append(seconds_to_time(current_issue_OLAP.time_estimate) + ' h')
+                            report.append(seconds_to_time(current_issue_OLAP.time_spent) + ' h')
+                            pass
+                        else:
+                            report.append('')
+                            report.append('')
+                if self.issue.created > _ranges.end:
                     # print(self.issue.created.fromtimestamp(), datetime.dated ranges_end, self.issue.created > ranges_end)
                     report.append(seconds_to_time(closed_day.time_estimate) + ' h')
                     report.append(seconds_to_time(closed_day.time_spent) + ' h')
@@ -524,6 +533,7 @@ class ReportCalc:
                 lines = 4  # start count from 1 row [in GUI 2]
                 ts, te = 0, 0
                 for issue in issues:
+
                     if issue.assignee == assignee:
                         report_issue = ReportIssue(issue, before_date, weeks_timestamp)
                         report_issue.generate_report()
@@ -634,8 +644,7 @@ if __name__ == '__main__':
     check_office_server()
     print('Init gl')
     gl = login_gl()
-    ask = input('do you need prepare issues?')
-
+    ask = input('do you need prepare issues? (y/n): ')
     if ask == 'y':
         print('Prepare issues...')
         prepare_issues(gl)
