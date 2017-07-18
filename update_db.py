@@ -7,6 +7,7 @@ import json
 import shelve
 import sys
 import logging
+import argparse
 from collections import namedtuple
 
 # imported libs
@@ -21,7 +22,12 @@ from peewee import *
 from models import OLAP
 from config import *
 
+parser = argparse.ArgumentParser(description='Args of this module')
+parser.add_argument('--sum', dest='accumulate', action='store_const',
+                   const=sum, default=max,
+                   help='sum the integers (default: find the max)')
 
+logging.basicConfig(level=logging.INFO, format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s')
 # Issues global DB
 issues = []
 # Assignees global DB
@@ -119,13 +125,13 @@ def check_server(address, port):
 
 def print_groups(gl):
     groups = gl.groups.list(per_page=1000)
-    print('\nGROUPS:')
+    logging.info('\nGROUPS:')
     for group in groups:
         if group.parent_id is not None:
             report = gl.groups.get(group.parent_id).name + '/'
         else:
             report = ''
-        print(report + group.name)
+        logging.info(report + group.name)
 
 
 def write_issues_to_csv(issues):
@@ -238,13 +244,13 @@ def prepare_issues(gl):
     projects = gl.projects.list(per_page=1000)
 
     if plog:
-        print('Projects:')
+        logging.info('Projects:')
     # Prepare issues database
     for project in projects:
         #if project.path_with_namespace.startswith('p2p-test'):
         if project.path_with_namespace.startswith('rtk'):
             if plog:
-                print(project.path_with_namespace)
+                logging.info(project.path_with_namespace)
             project_issues = project.issues.list(per_page=1000)
             for i in project_issues:
                 i.project = project.path_with_namespace
@@ -254,7 +260,6 @@ def prepare_issues(gl):
     db = shelve.open(dbname, writeback=True, flag='c')
     idx = 0
     for i in iss:
-        # print(i.updated_at)
         db[str(idx)] = Issue(i)
         idx = idx + 1
     db.close()
@@ -525,8 +530,7 @@ class ReportCalc:
                     cells.setPropertyValue('HoriJustify', align)
                     sheet.get_cell_by_position(6 + weeks.index(w) * 2, 2).setString("План")
                     sheet.get_cell_by_position(7 + weeks.index(w) * 2, 2).setString("Факт")
-
-                print('filling report of: ' + assignee)
+                logging.info('filling report of: ' + assignee)
                 # make headers:
 
                 # total ts and te of assignee
@@ -590,8 +594,7 @@ class ReportCalc:
             cell.Text.Hyperlink = '#{0}'.format(assignee)
 
         # here filling hyperlinks of assignee
-
-        print(filled_issue, 'issues from', len(issues), 'have assignee')
+        logging.info(str(filled_issue) + ' issues from ' +  str(len(issues)) + ' have assignee')
         # issues_sheet[1:10, 5].border_right_width = 1
 
         # todo $3
@@ -602,18 +605,17 @@ class ReportCalc:
 def check_office_server():
     """:returns bool """
     if not check_server(sohost, soport):
-        print('LibreOffice server not started.')
+        logging.warning('LibreOffice server not started.')
         with open("libre.log", "wb") as out, open("libre.err", "wb") as err:
             # command = '/Applications/LibreOffice.app/Contents/MacOS/soffice --accept="socket,host={0},port={1};urp;" --norestore --nologo --nodefault --headless'.format(
             # sohost, str(soport))
             # subprocess.Popen(command.split(), stdout=out, stderr=err) # close_fds=True
-            print('Please start libreoffice server with command:')
-            print(
-                "soffice --accept='socket,host={0},port={1};urp;StarOffice.Service'".format(
+            logging.warning('Please start libreoffice server with command:\n')
+            logging.warning("soffice --accept='socket,host={0},port={1};urp;StarOffice.Service'".format(
                     sohost, str(soport)))
             sys.exit()
     else:
-        print('LibreOfice server already running... Good!')
+        logging.info('LibreOfice server already running... Good!')
         return True
 
 
@@ -623,7 +625,7 @@ def login_gl():
     try:
         gl.auth()
     except:
-        print('error auth gl')
+        logging.warning('error auth gl')
         sys.exit()
     return gl
 
@@ -631,33 +633,33 @@ def login_gl():
 # Main entrance
 if __name__ == '__main__':
     # Start main processing pipeline
-    print('connect to db')
+    logging.info('connect to db')
     db = SqliteDatabase(db_path)  # temp db on sqlite3
     db.connect()
     tables = (db.get_tables(OLAP))
     if len(tables) == 0:
-        print('empty db, create table')
+        logging.warning('empty db, create table')
         db.create_table(OLAP)
 
     db.close()
-    print('Check office server:')
+    logging.info('Check office server:')
     check_office_server()
-    print('Init gl')
+    logging.info('Init gl')
     gl = login_gl()
+    # todo make check on key
     ask = input('do you need prepare issues? (y/n): ')
     if ask == 'y':
-        print('Prepare issues...')
+        logging.info('Prepare issues...')
         prepare_issues(gl)
 
     # todo uncomment string ^
     read_issues(dbname)
-    print('Write to csv file...')
+    logging.info('Write to csv file...')
     write_issues_to_csv(issues)
-    print()
-    print('Calculate times...')
+    logging.info('Calculate times...')
 #    print('Assignee \t\t\t estimate time \t spent time')
     calc_times(issues)
 
-    print('writing to xlsx')
+    logging.info('writing to xlsx')
     filled_report = ReportCalc()
 
