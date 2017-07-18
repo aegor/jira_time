@@ -22,11 +22,14 @@ from peewee import *
 from models import OLAP
 from config import *
 
+# config of argparser
+# todo make help of args
 parser = argparse.ArgumentParser(description='Args of this module')
-parser.add_argument('--sum', dest='accumulate', action='store_const',
-                   const=sum, default=max,
-                   help='sum the integers (default: find the max)')
+parser.add_argument('-t', action='store')
+args = parser.parse_args()
 
+
+# set level of logging
 logging.basicConfig(level=logging.INFO, format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s')
 # Issues global DB
 issues = []
@@ -646,11 +649,9 @@ if __name__ == '__main__':
     check_office_server()
     logging.info('Init gl')
     gl = login_gl()
-    # todo make check on key
-    ask = input('do you need prepare issues? (y/n): ')
-    if ask == 'y':
-        logging.info('Prepare issues...')
-        prepare_issues(gl)
+
+    logging.info('Prepare issues...')
+    prepare_issues(gl)
 
     # todo uncomment string ^
     read_issues(dbname)
@@ -660,6 +661,7 @@ if __name__ == '__main__':
 #    print('Assignee \t\t\t estimate time \t spent time')
     calc_times(issues)
 
-    logging.info('writing to xlsx')
-    filled_report = ReportCalc()
+    if args.t == 'y':
+        logging.info('writing to xlsx')
+        filled_report = ReportCalc()
 
