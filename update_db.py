@@ -608,12 +608,12 @@ class ReportCalc:
 def check_office_server():
     """:returns bool """
     if not check_server(sohost, soport):
-        logging.warning('LibreOffice server not started.')
+        logging.error('LibreOffice server not started.')
         with open("libre.log", "wb") as out, open("libre.err", "wb") as err:
             # command = '/Applications/LibreOffice.app/Contents/MacOS/soffice --accept="socket,host={0},port={1};urp;" --norestore --nologo --nodefault --headless'.format(
             # sohost, str(soport))
             # subprocess.Popen(command.split(), stdout=out, stderr=err) # close_fds=True
-            logging.warning('Please start libreoffice server with command:\n')
+            logging.error('Please start libreoffice server with command:\n')
             logging.warning("soffice --accept='socket,host={0},port={1};urp;StarOffice.Service'".format(
                     sohost, str(soport)))
             sys.exit()
@@ -645,15 +645,13 @@ if __name__ == '__main__':
         db.create_table(OLAP)
 
     db.close()
-    logging.info('Check office server:')
-    check_office_server()
+
     logging.info('Init gl')
     gl = login_gl()
 
     logging.info('Prepare issues...')
     prepare_issues(gl)
 
-    # todo uncomment string ^
     read_issues(dbname)
     logging.info('Write to csv file...')
     write_issues_to_csv(issues)
@@ -662,6 +660,8 @@ if __name__ == '__main__':
     calc_times(issues)
 
     if args.t == 'y':
+        logging.info('Check office server:')
+        check_office_server()
         logging.info('writing to xlsx')
         filled_report = ReportCalc()
 
