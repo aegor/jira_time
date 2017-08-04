@@ -33,12 +33,13 @@ def compare_chat(id):
 
 @bot.message_handler(func=compare_chat(OUR_CHAT), commands=['makereport'])
 def handler(msg):
-    thread = threading.Thread
+    
     update_db = 'python3 update_db.py'
     open_office = "soffice --accept='socket,host=localhost,port=2002;urp;StarOffice.Service'"
     get_report = "python3 update_db.py -t y"
-    subprocess.call(get_report.split())
-    
+    #subprocess.call(open_office.split())
+    thread = threading.Thread(target=subprocess.call, args=((open_office.split(),),))
+    thread.start()
     pr = subprocess.Popen(get_report.split(), stdout=subprocess.PIPE)
     output, error = pr.communicate()
     print(light(msg))
