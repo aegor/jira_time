@@ -499,25 +499,25 @@ class ReportCalc:
 
                 self.fill_header(sheet, name)
 
-                w4_end = self.get_day(datetime.datetime.now(), 4)
-                w4_start = self.get_day(datetime.datetime.now(), 0)
+                w4_end = self.get_day(datetime.datetime.now() - datetime.timedelta(days=1), 6)
+                w4_start = self.get_day(datetime.datetime.now()- datetime.timedelta(days=1), 0)
 
                 weeks = []
                 weeks_timestamp = []
                 this_week_num = w4_end.isocalendar()[1]
-                before_date = ''
+                before_date = None
                 for week in reversed(range(1, 4)):
-                    days_range = self.get_range_days_of_week(this_week_num-week, 0, 6)
+                    days_range = self.get_range_days_of_week(this_week_num - week, 0, 6)
                     weeks_timestamp.append(days_range)
                     weeks.append(days_range[0].strftime(self.date_format) + ' - ' + days_range[1].strftime(self.date_format))
-                    if before_date == '':
+                    if before_date is None:
                         before_date = self.get_range_days_of_week(this_week_num-week-1, 0, 6)[1]
 
                 weeks.append(str(w4_start.strftime(self.date_format)) + ' - ' + str(w4_end.strftime(self.date_format)))
                 # filling before
                 before = sheet.get_cell_range_by_position(4, 1, 5, 1)
 
-                before.setDataArray((('< ' + before_date.strftime(self.date_format), ''),))
+                before.setDataArray((('< ' + before_date.strftime(self.date_format), ''), ))
                 before.merge(True)
                 align = before.getPropertyValue('HoriJustify')
                 align.value = 'CENTER'
@@ -619,7 +619,7 @@ def check_office_server():
             # sohost, str(soport))
             # subprocess.Popen(command.split(), stdout=out, stderr=err) # close_fds=True
             logging.error('Please start libreoffice server with command:\n')
-            logging.warning("soffice --accept='socket,host={0},port={1};urp;StarOffice.Service'".format(
+            logging.warning("soffice --accept='socket,host={0},port={1};urp;StarOffice.Service' --headless".format(
                     sohost, str(soport)))
             sys.exit()
     else:
