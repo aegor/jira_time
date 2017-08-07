@@ -251,7 +251,7 @@ def prepare_issues(gl):
     # Prepare issues database
     for project in projects:
         #if project.path_with_namespace.startswith('p2p-test'):
-        if project.path_with_namespace.startswith('rtk'):
+        if project.path_with_namespace.startswith(projects_to_update):
             if plog:
                 logging.info(project.path_with_namespace)
             project_issues = project.issues.list(per_page=1000)
@@ -600,6 +600,11 @@ class ReportCalc:
         logging.info(str(filled_issue) + ' issues from ' +  str(len(issues)) + ' have assignee')
         # issues_sheet[1:10, 5].border_right_width = 1
 
+        # saving 
+        logging.info('saving report into {0}.ods'.format(datetime.date.today()))
+        url = convert_path_to_url('./docks/{0}.ods'.format(datetime.date.today()))
+        calc.store_to_url(url, 'FilterName', 'writer8')
+        calc.close(True)
         # todo $3
         # doc.save(xls_file, pyoo.FILTER_EXCEL_2007)
         # doc.close()
