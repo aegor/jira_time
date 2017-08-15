@@ -47,6 +47,21 @@ UNDERLINE_SINGLE = uno.getConstantByName('com.sun.star.awt.FontUnderline.SINGLE'
 
 # End of globals
 
+def light(text):
+    colors = {
+        'HEADER': '\033[95m',
+        'OKBLUE': '\033[94m',
+        'OKGREEN': '\033[92m',
+        'WARNING': '\033[93m',
+        'FAIL': '\033[91m',
+        # 'ENDC': '\033[0m',
+        # 'BOLD': '\033[1m',
+        # 'UNDERLINE': '\033[4m',
+    }
+    from random import randint
+    t = list(colors.keys())
+    return str(colors[t[randint(0, len(t)-1)]] + str(text) + '\033[0m')
+
 class Issue:
     """methods and structure of issue"""
 
@@ -308,8 +323,7 @@ class ReportIssue:
             # here working
             if closed_day.updated < self.before.timestamp():
                 return (seconds_to_time(closed_day.time_estimate) + ' h'
-                        , seconds_to_time(closed_day.time_spent) + ' h',
-                        '',  '', '', '', '', '', '', '')
+                        , seconds_to_time(closed_day.time_spent) + ' h',) + ('',)*8
             else:
                 report = ['', '']
                 previous_spent = 0
@@ -320,17 +334,18 @@ class ReportIssue:
                                                      OLAP.time_spent).where(
                         (OLAP.updated < ReportCalc.get_last_sec(w[1])) &
                         (OLAP.issue_id == self.issue.issue_id)).get()
+                    # todo check this
                     if (self.issue.created > ReportCalc.get_first_sec(w[0])) and (closed_day.updated < ReportCalc.get_last_sec(w[1])):
                         report.append(seconds_to_time(closed_day.time_estimate) + ' h')
                         report.append(seconds_to_time(closed_day.time_spent) + ' h')
                     elif self.issue.created > ReportCalc.get_first_sec(w[0]):
                         if previous_spent == 0:
                             if current_issue_OLAP.time_spent:
-                                previous_spent += current_issue_OLAP.time_spent
+                                previous_spent = current_issue_OLAP.time_spent
                                 report.append(seconds_to_time(previous_spent) + ' h')
                                 report.append(seconds_to_time(current_issue_OLAP.time_spent) + ' h')
                             else:
-                                # todo check on this value
+                                # here some magic
                                 report.append(seconds_to_time(previous_spent) + ' h')
                                 report.append(seconds_to_time(self.issue.time_spent_secs) + ' h')
                         else:
@@ -340,12 +355,11 @@ class ReportIssue:
                         if issue_range.begin < _ranges.begin and issue_range.end < datetime.datetime.timestamp(w[1]):
                             report.append(seconds_to_time(current_issue_OLAP.time_estimate) + ' h')
                             report.append(seconds_to_time(current_issue_OLAP.time_spent) + ' h')
-                            pass
+
                         else:
                             report.append('')
                             report.append('')
                 if self.issue.created > _ranges.end:
-                    # print(self.issue.created.fromtimestamp(), datetime.dated ranges_end, self.issue.created > ranges_end)
                     report.append(seconds_to_time(closed_day.time_estimate) + ' h')
                     report.append(seconds_to_time(closed_day.time_spent) + ' h')
                 else:
@@ -356,7 +370,7 @@ class ReportIssue:
             # todo make report on non complete issue
 
             pass
-            return ('', '', '', '', '', '', '', '', '', '')
+            return ('',)*10
 
 
 class ReportCalc:
@@ -607,7 +621,7 @@ class ReportCalc:
         # issues_sheet[1:10, 5].border_right_width = 1
 
         # saving 
-        logging.info('saving report into {0}.ods'.format(datetime.date.today()))
+        logging.info('saving report into ./Dock/reports/{0}.ods'.format(datetime.date.today()))
         url = convert_path_to_url(xls_file.format(datetime.date.today()))
         calc.store_to_url(url, 'FilterName', 'writer8')
         calc.close(True)
