@@ -31,9 +31,11 @@ args = parser.parse_args()
 
 
 # set level of logging
-path = os.path.dirname(os.path.abspath(__file__))
+path = os.path.dirname(os.path.abspath(__file__)) + '/logs/'
+if not os.path.exists(path):
+    os.makedirs(path)
 logging.basicConfig(level=logging.INFO,
-                    # filename=path + '/logs/info.log',
+                    # filename=path + 'info.log',
                     format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s')
 # Issues global DB
 issues = []
@@ -606,7 +608,7 @@ class ReportCalc:
 
         # saving 
         logging.info('saving report into {0}.ods'.format(datetime.date.today()))
-        url = convert_path_to_url('./docks/{0}.ods'.format(datetime.date.today()))
+        url = convert_path_to_url(xls_file.format(datetime.date.today()))
         calc.store_to_url(url, 'FilterName', 'writer8')
         calc.close(True)
         # todo $3
@@ -644,6 +646,7 @@ def login_gl():
 
 # Main entrance
 if __name__ == '__main__':
+    print(xls_file)
     # Start main processing pipeline
     logging.info('connect to db')
     db = SqliteDatabase(db_path)  # temp db on sqlite3

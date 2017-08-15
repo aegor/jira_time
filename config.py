@@ -10,7 +10,7 @@ gitlab_url = 'https://projects.rtk-sdo.ru'
 db_path = files_folder+'localbase.db'
 projects_to_update = 'rtk'
 issues_csv_file = files_folder+'issues.csv'
-xls_file = files_folder+'{0}.ods'
+xls_file = files_folder + 'reports/{0}.ods'
 email = 'antonpaly@ya.ru'
 password = 'ppoezth10m9atzam49ASlOr'
 
