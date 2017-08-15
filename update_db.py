@@ -21,6 +21,7 @@ from peewee import *
 # created modules
 from models import OLAP
 from config import *
+import os
 
 # config of argparser
 # todo make help of args
@@ -30,7 +31,10 @@ args = parser.parse_args()
 
 
 # set level of logging
-logging.basicConfig(level=logging.INFO, format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s')
+path = os.path.dirname(os.path.abspath(__file__))
+logging.basicConfig(level=logging.INFO,
+                    # filename=path + '/logs/info.log',
+                    format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s')
 # Issues global DB
 issues = []
 # Assignees global DB
@@ -644,7 +648,7 @@ if __name__ == '__main__':
     logging.info('connect to db')
     db = SqliteDatabase(db_path)  # temp db on sqlite3
     db.connect()
-    tables = (db.get_tables(OLAP))
+    tables = db.get_tables(OLAP)
     if len(tables) == 0:
         logging.warning('empty db, create table')
         db.create_table(OLAP)
