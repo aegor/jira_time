@@ -35,7 +35,7 @@ path = os.path.dirname(os.path.abspath(__file__)) + '/logs/'
 if not os.path.exists(path):
     os.makedirs(path)
 logging.basicConfig(level=logging.INFO,
-                    # filename=path + 'info.log',
+                    filename=path + 'info.log',
                     format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s')
 # Issues global DB
 issues = []
@@ -318,16 +318,17 @@ class ReportIssue:
                                                         (OLAP.state == 'closed')).get()
         range_template = namedtuple('dates_range', ['begin', 'end'])
         issue_range = range_template(self.issue.created, closed_day.updated)
-
         if closed_day.updated is not None:
             # here working
             if closed_day.updated < self.before.timestamp():
                 return (seconds_to_time(closed_day.time_estimate) + ' h'
                         , seconds_to_time(closed_day.time_spent) + ' h',) + ('',)*8
             else:
+                # todo here start problems
                 report = ['', '']
                 previous_spent = 0
-                _ranges = range_template(ReportCalc.get_first_sec(self.ranges[0][0]), ReportCalc.get_last_sec(self.ranges[len(self.ranges) - 1][1]))
+                _ranges = range_template(ReportCalc.get_first_sec(self.ranges[0][0]),
+                                         ReportCalc.get_last_sec(self.ranges[len(self.ranges) - 1][1]))
                 for w in self.ranges:
                     current_issue_OLAP = OLAP.select(fn.Max(OLAP.updated),
                                                      OLAP.time_estimate,
@@ -336,8 +337,8 @@ class ReportIssue:
                         (OLAP.issue_id == self.issue.issue_id)).get()
                     # todo check this
                     if (self.issue.created > ReportCalc.get_first_sec(w[0])) and (closed_day.updated < ReportCalc.get_last_sec(w[1])):
-                        report.append(seconds_to_time(closed_day.time_estimate) + ' h')
-                        report.append(seconds_to_time(closed_day.time_spent) + ' h')
+                        report += [seconds_to_time(closed_day.time_estimate) + ' h',
+                                   seconds_to_time(closed_day.time_spent) + ' h']
                     elif self.issue.created > ReportCalc.get_first_sec(w[0]):
                         if previous_spent == 0:
                             if current_issue_OLAP.time_spent:
@@ -345,26 +346,38 @@ class ReportIssue:
                                 report.append(seconds_to_time(previous_spent) + ' h')
                                 report.append(seconds_to_time(current_issue_OLAP.time_spent) + ' h')
                             else:
-                                # here some magic
-                                report.append(seconds_to_time(previous_spent) + ' h')
-                                report.append(seconds_to_time(self.issue.time_spent_secs) + ' h')
+                                # 1
+                                report += ['', '']
+                                # report.append(seconds_to_time(previous_spent) + ' h')
+                                # report.append(seconds_to_time(self.issue.time_spent_secs) + ' h')
                         else:
-                            report.append('e')
-                            report.append('e')
+                            # 2
+                            report += ['2', '2']
                     else:
-                        if issue_range.begin < _ranges.begin and issue_range.end < datetime.datetime.timestamp(w[1]):
-                            report.append(seconds_to_time(current_issue_OLAP.time_estimate) + ' h')
-                            report.append(seconds_to_time(current_issue_OLAP.time_spent) + ' h')
-
+                        if issue_range.begin < _ranges.begin:
+                            if issue_range.end < datetime.datetime.timestamp(w[1]):
+                                report += [seconds_to_time(current_issue_OLAP.time_estimate) + ' h',
+                                           seconds_to_time(current_issue_OLAP.time_spent) + ' h']
+                            # todo check this fields
+                            else:
+                                # 3
+                                if report[0] == '' and report[1] == '':
+                                    report[0] = seconds_to_time(current_issue_OLAP.time_estimate) + ' h'
+                                    report[1] = seconds_to_time(current_issue_OLAP.time_spent) + ' h'
+                                report += [seconds_to_time(current_issue_OLAP.time_estimate) + ' h',
+                                           seconds_to_time(current_issue_OLAP.time_spent) + ' h']
                         else:
-                            report.append('')
-                            report.append('')
+                            report += [seconds_to_time(current_issue_OLAP.time_estimate) + ' h',
+                                       seconds_to_time(current_issue_OLAP.time_spent) + ' h']
                 if self.issue.created > _ranges.end:
                     report.append(seconds_to_time(closed_day.time_estimate) + ' h')
                     report.append(seconds_to_time(closed_day.time_spent) + ' h')
                 else:
-                    report.append('')
-                    report.append('')
+                    # 4
+                    report += ['4', '4']
+                    # report.append('')
+                    # report.append('')
+
                 return tuple(report)
         else:
             # todo make report on non complete issue
