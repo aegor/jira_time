@@ -374,7 +374,7 @@ class ReportIssue:
                     report.append(seconds_to_time(closed_day.time_spent) + ' h')
                 else:
                     # 4
-                    report += ['4', '4']
+                    report += ['', '']
                     # report.append('')
                     # report.append('')
 
@@ -572,14 +572,16 @@ class ReportCalc:
                 # total ts and te of assignee
                 lines = 4  # start count from 1 row [in GUI 2]
                 ts, te = 0, 0
+                
                 for issue in issues:
-
+               
                     if issue.assignee == assignee:
                         report_issue = ReportIssue(issue, before_date, weeks_timestamp)
                         report_issue.generate_report()
                         iss = OLAP.select().where(OLAP.issue_id == issue.issue_id).get()
                         line = sheet.get_cell_range_by_position(0, lines, 3, lines)
-
+                        iid = issue.url.split('/')[-1]
+                        
                         date_closing = self.get_date_closing(issue)
                         if date_closing != '':
                             row = sheet.get_cell_range_by_position(0, lines, 13, lines)
@@ -588,7 +590,7 @@ class ReportCalc:
                             row.setPropertyValues(self.keys, self.border_lines)
 
                         line.setDataArray(((iss.project_name,
-                                           iss.issue_title,
+                                           "#" + iid + ' ' + iss.issue_title,
                                            str(datetime.datetime.fromtimestamp(issue.created + 18000).strftime(
                                                '%d-%m-%Y %H:%M')),
                                            date_closing,),))
