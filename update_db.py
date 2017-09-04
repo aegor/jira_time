@@ -381,7 +381,7 @@ class ReportIssue:
                 return tuple(report)
         else:
             # todo make report on non complete issue
-
+            
             pass
             return ('',)*10
 
