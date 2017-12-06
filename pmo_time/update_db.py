@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 #  system libs
@@ -675,7 +675,7 @@ def login_gl():
 
 # Main entrance
 if __name__ == '__main__':
-    print(xls_file)
+    # print(xls_file)
     # Start main processing pipeline
     logging.info('connect to db')
     db = SqliteDatabase(db_path)  # temp db on sqlite3

@@ -8,7 +8,6 @@ import datetime
 from config import xls_file
 
 files_folder = os.path.dirname(os.path.abspath(__file__))
-print(files_folder)
 # local vars
 OUR_CHAT = -238585802
 # OUR_CHAT = 237514032  # this is the test chat

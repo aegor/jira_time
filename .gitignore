@@ -2,9 +2,9 @@
 __pycache__
 .idea
 test*
-*.xlsx
+#*.xlsx
 *.csv
-*.db
+#*.db
 *.log
 *.err
 
