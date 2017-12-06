@@ -22,4 +22,4 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 # this command must be initialized
-ENTRYPOINT soffice --accept='socket,host=localhost,port=2002;urp;StarOffice.Service' --headless & /bin/bash
+ENTRYPOINT soffice --accept='socket,host=localhost,port=2002;urp;StarOffice.Service' --headless & /usr/sbin/cron -f
