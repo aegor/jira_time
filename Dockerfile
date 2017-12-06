@@ -8,10 +8,11 @@ RUN aptitude install -y libreoffice libreoffice-script-provider-python uno-libs3
 
 RUN pip3 install unotools pytelegrambotapi==3.2.0
 
-WORKDIR /opt/pmo
+# copy application source and db
 
-# copy source of program and db
-COPY pmo_time ./pmo_time
+COPY pmo_time /opt/pmo/pmo_time
+
+WORKDIR /opt/pmo
 
 # configure cron to create and send weekly report
 RUN echo '0 7 * * 1 /opt/pmo/pmo_time/bot.py' >> /var/spool/cron/crontabs/root
