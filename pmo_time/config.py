@@ -1,7 +1,8 @@
 import os
 #docks = './docs/'
 
-files_folder = os.path.dirname(os.path.abspath(__file__)) + '/Docs/'
+files_folder = os.environ.get('DOCS_DIR', '/opt/Docs')
+
 # files_folder = os.getcwd() + '/docks/'
 
 gitlab_url = 'https://projects.rtk-sdo.ru'
