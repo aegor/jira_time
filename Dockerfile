@@ -17,7 +17,7 @@ WORKDIR /opt/pmo
 # configure cron to create and send weekly report
 RUN echo '0 7 * * 1 /opt/pmo/pmo_time/bot.py' >> /etc/crontab
 RUN echo '0 1 * * * /opt/pmo/pmo_time/update_db.py' >> /etc/crontab
-RUN echo '0 1 * * * cp -r /opt/Docs/reports $MESOS_SANDBOX' >> /etc/crontab
+RUN echo '30 1 * * * cp -r /opt/Docs/reports $MESOS_SANDBOX' >> /etc/crontab
 
 RUN locale-gen en_US.UTF-8; locale-gen ru_RU.UTF-8;  export LANGUAGE=en_US.UTF-8; export LANG=en_US.UTF-8; export LC_ALL=en_US.UTF-8; DEBIAN_FRONTEND=noninteractive dpkg-reconfigure locales
 
