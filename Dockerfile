@@ -28,6 +28,6 @@ ENV LC_ALL en_US.UTF-8
 
 RUN mkdir /opt/Docs
 VOLUME /opt/Docs
-ENV DOCS_DIR /opt/Docs
+ENV DOCS_DIR /opt/Docs/
 
 ENTRYPOINT soffice --accept='socket,host=localhost,port=2002;urp;StarOffice.Service' --headless & /usr/sbin/cron -f
