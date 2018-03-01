@@ -1,0 +1,9 @@
+version: "2"
+
+services:
+  time:
+    build:
+      context: .
+    image: "dr.rtk-sdo.ru:5000/pmo-time"
+    volumes:
+      - ./Docs:/opt/Docs
