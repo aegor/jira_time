@@ -13,7 +13,7 @@ projects_to_update = 'rtk'
 issues_csv_file = files_folder+'issues.csv'
 xls_file = files_folder + 'reports/{0}.ods'
 email = 'antonpaly@ya.ru'
-password = 'ppoezth10m9atzam49ASlOr'
+password = 'ppoezth10m9'
 
 dbname = files_folder+'issues'
 
